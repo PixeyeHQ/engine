@@ -1,8 +1,8 @@
 # Package
 version       = "0.1.0"
-author        = "Dmitry Mitrofanov"
-description   = "A new awesome nimble package"
-license       = "MIT"
+author        = "Dmitry Igorevich Mitrofanov"
+description   = "2d/3d Game engine"
+license       = "Zlib"
 srcDir        = "src"
 installExt    = @["nim"]
 bin           = @["bin"]
