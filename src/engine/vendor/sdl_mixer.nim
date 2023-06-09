@@ -1,0 +1,2 @@
+import sdl2_nim/sdl_mixer
+export sdl_mixer
