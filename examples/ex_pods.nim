@@ -5,10 +5,12 @@ import std/strutils
 import engine
 import engine/pxd/pods/pods # you need to import this in order to make custom pod hooks. #todo: this must be done another way I think.
 
+
 type UnitKind = enum
   Melee = "Melee",
   Range = "Range",
   Mage  = "Mage"
+
 
 type UnitObj = object
   name:  string
@@ -18,20 +20,21 @@ type UnitObj = object
   kind:  UnitKind
 
 
-proc toPodHook*[T: UnitKind](pod: var Pod, obj: T) =
-  toPodHook(pod, $obj)
+proc toPodHook*(pod: var Pod, val: UnitKind) =
+  toPodHook(pod, $val)
 
 
 proc fromPodHook*(pod: var Pod, result: var UnitKind) =
   result = parseEnum[UnitKind](pod.vstring)
 
+
 pxd.run():
-  var unit1 = UnitObj(name: "Katbert", pos: vec(10,10,0), power: 100, cost: 10, kind: Range)
-  var unit2 = UnitObj(name: "Alan", pos: vec(5,10,0), power: 90, cost: 10, kind: Mage)
+  var unit1 = UnitObj(name: "Cuthbert", pos: vec(10,10,0), power: 100, cost: 10, kind: Range)
+  var unit2 = UnitObj(name: "Alain", pos: vec(5,10,0), power: 90, cost: 10, kind: Mage)
   var unit3 = UnitObj(name: "Roland", pos: vec(12,10,5), power: 150, cost: 20, kind: Melee)
   var pod   = pxd.pods.initPodObject()
-  pod["Katbert"] = pxd.pods.toPod(unit1)
-  pod["Alan"]    = pxd.pods.toPod(unit2)
+  pod["Cuthbert"] = pxd.pods.toPod(unit1)
+  pod["Alain"]    = pxd.pods.toPod(unit2)
   pod["Roland"]  = pxd.pods.toPod(unit3)
   # io.path("*/") returns path to persistent app data.
   # windows: %userprofile%\AppData\Roaming\<companyname>\<productname>
@@ -44,8 +47,8 @@ pxd.run():
   # Dense:   save pod to file in a verbose tree format. Usually used for configs.
   # Sparse:  save pod to file in a json like tree format. Sparse also enables pretty formatting for variables. In future this will be optional.
   var pod_loaded   = pxd.pods.fromPodFile(io.path("*/dense.pod"))
-  var unit1_loaded = pxd.pods.fromPod(pod_loaded["Katbert"], UnitObj)
-  var unit2_loaded = pxd.pods.fromPod(pod_loaded["Alan"], UnitObj)
+  var unit1_loaded = pxd.pods.fromPod(pod_loaded["Cuthbert"], UnitObj)
+  var unit2_loaded = pxd.pods.fromPod(pod_loaded["Alain"], UnitObj)
   var unit3_loaded = pxd.pods.fromPod(pod_loaded["Roland"], UnitObj)
 
   print unit1_loaded
