@@ -1,8 +1,8 @@
 (
   app.developer = 'Unknown';
   app.title     = 'New Game';
-  app.window.w  = 1920;;
-  app.window.h  = 1080;;
+  app.window.w  = 1280;;
+  app.window.h  = 720;;
   app.fps       = 60;
   app.ups       = 60;
   app.vsync     = false;

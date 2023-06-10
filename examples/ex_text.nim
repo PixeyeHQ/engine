@@ -11,7 +11,10 @@ pxd.run():
 
   let font_asset = pxd.res.load("./assets/fonts/iosevka_sdf.fnt")
   p2d.draw.setFont(font_asset.font)
+
   pxd.loop():
+    if input.down(Key.Esc):
+      pxd.closeApp()
     if input.down(Key.Q):
       label_w -= 50
     if input.down(Key.E):

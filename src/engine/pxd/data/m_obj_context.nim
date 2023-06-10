@@ -1,7 +1,7 @@
 
 #[
   Provide access to an object with different Id.
-  This is used in ECS where every component storage is registered for every Registry (ECS World)
+  Used in ECS where every component storage is registered for every registry (ECS World)
 ]#
 import pxd/m_utils_collections
 

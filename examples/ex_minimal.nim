@@ -10,5 +10,8 @@ proc onEvent(ev: EventId) =
 
 
 pxd.run():
+  let input = pxd.inputs.get()
   pxd.loop(onEvent):
+    if input.down(Key.Esc):
+      pxd.closeApp()
     discard

@@ -1445,7 +1445,7 @@ proc fromPodStringHook*(p: var PodReader, pod: var Pod) =
         else:
           debug.fatal(debug_tag,"wrong null")
       else:
-          debug.fatal(debug_tag,"no value")
+          debug.fatal("no value")
           break
     p.skip()
   p.skipWhitespace()

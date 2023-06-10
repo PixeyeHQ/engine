@@ -1,3 +1,7 @@
+#[
+  Not production ready, just a simple wrapper from sdl mixer to mark audio presense.
+  This module will be expanded in future on demand of upcoming game projects.
+]#
 import std/strformat
 import vendor/sdl_mixer as mix
 import engine/pxd/api

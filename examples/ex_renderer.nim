@@ -23,12 +23,14 @@ pxd.run():
   for i in 0..SPRITES_AMOUNT:
     pawns_positions.add(vec(rand(0..screen_w.int).float,rand(0..screen_h.int).float))
     pawns_frame.add(rand(0..6))
- 
+  
+  let input = pxd.inputs.get()
   pxd.loop():
     pxd.time.every(1, pm_seconds):
       inc frame
       frame = frame mod 6
-
+    if input.down(Key.Esc):
+      pxd.closeApp()
     pxd.render.draw():
       pxd.render.clear(0.3, 0.3, 0.4)
       pxd.render.mode(screen)

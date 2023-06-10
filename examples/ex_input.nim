@@ -26,7 +26,10 @@ pxd.run():
   pxd.loop():
     if input.down(Interact):
       print "interact"
+    if input.down(Key.Esc):
+      pxd.closeApp()
     let axisx = input.axis(Horizontal)
     let axisy = input.axis(Vertical)
     pxd.everyStep():
-      print axisx, "::", axisy
+      print io.vars.get("app.window.z.kind", string)[]
+      print io.vars.get("app.window.z.value", int)[]
