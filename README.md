@@ -5,6 +5,7 @@ Currently engine focuses on 2D stuff and it aims to cover my specific needs as I
 In order to run examples on Windows you will need to copy SDL dlls and assets folder from examples to where your compiled executables are saved. The Dlls itself can be found in libs folder or downloaded elsewhere including SDL official site.
 
 New features, documentation will be provided at some point in the future.
+
 It uses devel features of the NIM, so it will work only on the DEVEL branch of Nim.
 
 # FAQ
