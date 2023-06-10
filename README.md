@@ -6,6 +6,8 @@ In order to run examples on Windows you will need to copy SDL dlls and assets fo
 
 New features, documentation will be provided at some point in the future.
 
+It uses devel features of the NIM, so it will work only on the DEVEL branch of Nim.
+
 # FAQ
 * __Why Nim?__ 
     
