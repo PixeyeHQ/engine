@@ -31,5 +31,4 @@ pxd.run():
     let axisx = input.axis(Horizontal)
     let axisy = input.axis(Vertical)
     pxd.everyStep():
-      print io.vars.get("app.window.z.kind", string)[]
-      print io.vars.get("app.window.z.value", int)[]
+      print axisx, "::", axisy
