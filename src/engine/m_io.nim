@@ -153,7 +153,7 @@ proc save*(api: VarsAPI, relativePath: string) =
 
 
 proc init*(api: IoAPI) =
-  io.vars.load("./assets/engine.pod")
+  io.vars.load("./assets/engine.pods")
   block init_folders:
     let developer = io.vars.source["app.developer"].vstring
     let title     = io.vars.source["app.title"].vstring

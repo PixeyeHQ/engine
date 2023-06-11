@@ -40,13 +40,13 @@ pxd.run():
   # windows: %userprofile%\AppData\Roaming\<companyname>\<productname>
   # default <companyname> is 'Unknown' and default <productname> is 'New Game'
   # those settings can be changed in engine.pod file.
-  pxd.pods.toPodFile(io.path("*/dense.pod"),   pod, PodSettings(style: PodStyle.Dense))
-  pxd.pods.toPodFile(io.path("*/compact.pod"), pod, PodSettings(style: PodStyle.Compact))
-  pxd.pods.toPodFile(io.path("*/sparse.pod"),  pod, PodSettings(style: PodStyle.Sparse))
+  pxd.pods.toPodFile(io.path("*/dense.pods"),   pod, PodSettings(style: PodStyle.Dense))
+  pxd.pods.toPodFile(io.path("*/compact.pods"), pod, PodSettings(style: PodStyle.Compact))
+  pxd.pods.toPodFile(io.path("*/sparse.pods"),  pod, PodSettings(style: PodStyle.Sparse))
   # Compact: save pod to file without spaces in one line.
   # Dense:   save pod to file in a verbose tree format. Usually used for configs.
   # Sparse:  save pod to file in a json like tree format. Sparse also enables pretty formatting for variables. In future this will be optional.
-  var pod_loaded   = pxd.pods.fromPodFile(io.path("*/dense.pod"))
+  var pod_loaded   = pxd.pods.fromPodFile(io.path("*/dense.pods"))
   var unit1_loaded = pxd.pods.fromPod(pod_loaded["Cuthbert"], UnitObj)
   var unit2_loaded = pxd.pods.fromPod(pod_loaded["Alain"], UnitObj)
   var unit3_loaded = pxd.pods.fromPod(pod_loaded["Roland"], UnitObj)
