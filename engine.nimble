@@ -1,16 +1,13 @@
 # Package
-version       = "0.1.0"
-author        = "Dmitry Igorevich Mitrofanov"
+version       = "1.2023.6.0"
+author        = "Dmitry Igorevich Mitrofanov (@pixeye)"
 description   = "2d/3d Game engine"
 license       = "Zlib"
 srcDir        = "src"
-installExt    = @["nim"]
-bin           = @["bin"]
 
 # Dependencies
 requires "nim >= 1.0"
 requires "sdl2_nim >= 2.0.14.3"
-
 
 var ex = "ex"
 var debug = "debug"
