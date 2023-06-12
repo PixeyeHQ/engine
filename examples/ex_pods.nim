@@ -2,8 +2,8 @@
   POD (Pack of Data) is the engine Intermediate Data Format like JSON
 ]#
 import std/strutils
-import engine
-import engine/pxd/pods/pods # you need to import this in order to make custom pod hooks. #todo: this must be done another way I think.
+import px_engine
+import px_engine/pxd/pods/pods # you need to import this in order to make custom pod hooks. #todo: this must be done another way I think.
 
 
 type UnitKind = enum

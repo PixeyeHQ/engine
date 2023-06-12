@@ -1,4 +1,4 @@
-import engine
+import px_engine
 import std/random; randomize()
 const SPRITES_AMOUNT = 30_000
 const SPRITE_SIZE    = 200
