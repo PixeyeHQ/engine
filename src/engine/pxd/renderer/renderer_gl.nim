@@ -1,5 +1,5 @@
-import vendor/gl
-import vendor/stb_image
+import engine/vendor/gl
+import engine/vendor/stb_image
 import engine/px
 import engine/pxd/api
 import engine/pxd/m_platform

@@ -1,10 +1,10 @@
 import std/tables
 import engine/px
-import pxd/api
-import pxd/m_debug
-import pxd/m_time
-import pxd/m_utils
-import pxd/platform/platform_d
+import engine/pxd/api
+import engine/pxd/m_debug
+import engine/pxd/m_time
+import engine/pxd/m_utils
+import engine/pxd/platform/platform_d
 import inputs_d
 import inputs_event
 

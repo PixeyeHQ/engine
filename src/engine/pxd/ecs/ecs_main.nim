@@ -2,12 +2,12 @@ import std/hashes
 import std/macros
 import std/strutils
 import std/tables
-import pxd/api as pxd_api except ents
-import pxd/data/m_mem_pool
-import pxd/data/m_obj_context
-import pxd/m_utils_collections
-import pxd/m_key
-import pxd/m_debug
+import engine/pxd/api as pxd_api except ents
+import engine/pxd/data/m_mem_pool
+import engine/pxd/data/m_obj_context
+import engine/pxd/m_utils_collections
+import engine/pxd/m_key
+import engine/pxd/m_debug
 import ecs_d
 
 

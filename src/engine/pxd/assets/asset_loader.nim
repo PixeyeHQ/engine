@@ -3,8 +3,8 @@ import std/tables
 import std/os
 import engine/m_io
 import engine/px
-import pxd/api
-import pxd/data/m_mem_pool
+import engine/pxd/api
+import engine/pxd/data/m_mem_pool
 import asset_d
 import asset_shader
 import asset_image

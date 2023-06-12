@@ -1,2 +1,2 @@
 when defined opengl:
-  include pxd/renderer/renderer_gl_asset_shader
+  include engine/pxd/renderer/renderer_gl_asset_shader

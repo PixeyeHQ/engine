@@ -9,7 +9,7 @@ import std/unicode
 import std/strutils
 import std/strformat
 import std/typetraits
-import pxd/m_debug
+import engine/pxd/m_debug
 import pods_d
 
 

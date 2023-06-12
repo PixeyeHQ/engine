@@ -1,4 +1,4 @@
-import vendor/gl
+import engine/vendor/gl
 import engine/pxd/api
 import engine/pxd/m_math
 import engine/pxd/data/m_mem_d

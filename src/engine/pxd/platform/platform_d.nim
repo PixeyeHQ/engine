@@ -1,5 +1,5 @@
 when defined(sdl):
-  import vendor/sdl
+  import engine/vendor/sdl
 
   const SCANCODES_MOUSE_BEGIN*     = 350
   const SCANCODES_MOUSE_END*       = 366

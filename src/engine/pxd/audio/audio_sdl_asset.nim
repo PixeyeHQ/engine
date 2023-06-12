@@ -1,4 +1,4 @@
-import vendor/sdl_mixer as mix
+import engine/vendor/sdl_mixer as mix
 import engine/pxd/api
 import engine/pxd/data/m_mem_pool
 import engine/pxd/m_debug

@@ -2,7 +2,7 @@ import std/os
 import std/strformat
 import std/strutils
 import std/tables
-import vendor/gl
+import engine/vendor/gl
 import engine/m_io
 import engine/pxd/api
 import engine/pxd/m_debug

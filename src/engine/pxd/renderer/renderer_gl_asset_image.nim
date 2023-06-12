@@ -1,4 +1,4 @@
-import vendor/stb_image
+import engine/vendor/stb_image
 import engine/pxd/api
 import engine/pxd/data/m_mem_pool
 import engine/pxd/data/m_mem

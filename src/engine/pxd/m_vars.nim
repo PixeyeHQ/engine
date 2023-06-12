@@ -1,7 +1,7 @@
 import std/tables
-import pxd/api
-import pxd/m_pods
-import pxd/m_vars_d
+import engine/pxd/api
+import engine/pxd/m_pods
+import engine/pxd/m_vars_d
 export m_vars_d.VARS_DONT_SAVE
 
 var varsPod: Pod

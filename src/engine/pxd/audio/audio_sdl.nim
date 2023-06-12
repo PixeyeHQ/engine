@@ -3,7 +3,7 @@
   This module will be expanded in future on demand of upcoming game projects.
 ]#
 import std/strformat
-import vendor/sdl_mixer as mix
+import engine/vendor/sdl_mixer as mix
 import engine/pxd/api
 import engine/pxd/m_debug
 

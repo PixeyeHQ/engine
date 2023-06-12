@@ -1,8 +1,8 @@
 import std/strutils
 import std/strformat
 import std/hashes
-import pxd/api
-import pxd/m_debug
+import engine/pxd/api
+import engine/pxd/m_debug
 export hashes
 
 
@@ -197,7 +197,7 @@ template GEN_MEM_POOL*(T: typedesc, H: typedesc, defaultSize: static int = 4) =
 # @api mem table
 #------------------------------------------------------------------------------------------
 import std/tables
-import pxd/m_key
+import engine/pxd/m_key
 
 
 type MemTable*[T,H] = object

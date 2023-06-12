@@ -1,4 +1,4 @@
-import vendor/gl
+import engine/vendor/gl
 import engine/pxd/api
 import engine/p2d/api
 import engine/pxd/m_debug

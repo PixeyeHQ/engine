@@ -1,9 +1,9 @@
 import std/os
 import std/strformat
 import engine/Px
-import pxd/api
-import pxd/m_vars
-import pxd/m_pods
+import engine/pxd/api
+import engine/pxd/m_vars
+import engine/pxd/m_pods
 
 
 #------------------------------------------------------------------------------------------

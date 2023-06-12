@@ -1,10 +1,10 @@
 import std/times
-import vendor/sdl
+import engine/vendor/sdl
 import engine/m_io
-import pxd/api
-import pxd/m_debug
-import pxd/m_vars
-import pxd/inputs/inputs_event
+import engine/pxd/api
+import engine/pxd/m_debug
+import engine/pxd/m_vars
+import engine/pxd/inputs/inputs_event
 import platform_d
 
 #------------------------------------------------------------------------------------------
