@@ -106,7 +106,7 @@ template run*(api: PxdAPI, code: untyped): untyped =
   template loop(apiLoop: PxdAPI, gameOnEvent: untyped, codeLoop: untyped) =
     var dt {.inject.}: float
     block:
-      template everyStep(apiStep: PxdAPI, codeStep: untyped) =
+      template everyStep(apiStep: PxdAPI, codeStep: untyped) {.used.} =
         let ms = 1.0 / io.app.ups.float
         while ms <= timeState.stepLag:
           codeStep
