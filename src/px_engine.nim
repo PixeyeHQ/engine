@@ -1,3 +1,4 @@
+
 import px_engine/Px
 export Px
 
@@ -19,6 +20,14 @@ export m_p2d
 
 import px_engine/m_runtime
 export m_runtime
+
+
+import px_engine/m_assets
+export m_assets
+
+
+import px_engine/m_entities
+export m_entities
 
 
 import std/tables

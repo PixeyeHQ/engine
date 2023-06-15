@@ -112,7 +112,7 @@ proc getRegistry*(api;): Registry =
   result = api.getRegistry("default")
   if not exist:
     debug.warn("[ECS] Lazy registry initialization, all entities belong to default registry.")
-    result.setEntityRange(0,ECS_ENTITY_MAX)
+    result.setEntityRange(0, ECS_ENTITY_MAX)
     pxd.ecs.pushRegistry(result)
 
 

@@ -1,6 +1,7 @@
 import std/unicode
 import px_engine/Px
 import px_engine/m_pxd
+import px_engine/m_assets
 import api
 
 

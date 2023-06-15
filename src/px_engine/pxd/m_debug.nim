@@ -423,3 +423,6 @@ template requireMessage*(pmessage: string, pfileName: string, pprocName: string)
       let filename {.inject.} = pfileName
       let procname {.inject.} = pprocName
       &"{message}\n⯈ {filename} {procname}"
+
+
+debug.init()

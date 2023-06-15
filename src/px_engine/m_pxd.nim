@@ -1,48 +1,17 @@
-import px_engine/pxd/api as pxd_api
-export pxd_api
+import px_engine/tools/m_export
 
-import px_engine/pxd/m_vars
-export m_vars
-
-import px_engine/pxd/m_key
-export m_key
-
-import px_engine/pxd/data/m_mem_pool
-export m_mem_pool
-
-import px_engine/pxd/data/m_obj_context
-export m_obj_context
-
-import px_engine/pxd/m_debug
-export m_debug
-
-import px_engine/pxd/m_pods
-export m_pods
-
-import px_engine/pxd/m_ecs
-export m_ecs
-
-import px_engine/pxd/m_render
-export m_render
-
-import px_engine/pxd/m_platform
-export m_platform
-
-import px_engine/pxd/m_inputs
-export m_inputs
-
-import px_engine/pxd/m_time
-export m_time
-
-import px_engine/pxd/m_math
-export m_math
-
-import px_engine/pxd/m_res
-export m_res
-
-import px_engine/pxd/m_metrics_app
-export m_metrics_app
-
-import px_engine/pxd/m_audio
-export m_audio
-
+EXPORT px_engine/pxd/api, pxd_api
+EXPORT px_engine/pxd/m_vars, m_vars
+EXPORT px_engine/pxd/m_key, m_key
+EXPORT px_engine/pxd/data/m_mem_pool, m_mem_pool
+EXPORT px_engine/pxd/data/m_obj_context, m_obj_context
+EXPORT px_engine/pxd/m_debug, m_debug
+EXPORT px_engine/pxd/m_pods, m_pods
+EXPORT px_engine/pxd/m_ecs, m_ecs
+EXPORT px_engine/pxd/m_render, m_render
+EXPORT px_engine/pxd/m_platform, m_platform
+EXPORT px_engine/pxd/m_inputs, m_inputs
+EXPORT px_engine/pxd/m_time, m_time
+EXPORT px_engine/pxd/m_math, m_math
+EXPORT px_engine/pxd/m_metrics_app, m_metrics_app
+EXPORT px_engine/pxd/m_audio, m_audio

@@ -7,7 +7,7 @@ import px_engine/pxd/m_math
 import px_engine/pxd/m_pods
 import px_engine/pxd/m_debug
 import px_engine/pxd/data/m_mem_pool
-import px_engine/pxd/assets/asset_texture
+import px_engine/assets/asset_texture
 
 
 type SpriteAtlas* = distinct Handle

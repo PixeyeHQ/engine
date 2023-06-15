@@ -1,9 +1,10 @@
-import px_engine/pxd/assets/[
+import px_engine/assets/[
   asset_loader,
   asset_shader,
   asset_texture,
   asset_sprite,
-  asset_font
+  asset_font,
+  asset_audio
 ]
 
 export
@@ -11,4 +12,5 @@ export
   asset_shader,
   asset_texture,
   asset_sprite,
-  asset_font
+  asset_font,
+  asset_audio

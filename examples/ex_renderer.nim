@@ -31,10 +31,11 @@ pxd.run():
       frame = frame mod 6
     if input.down(Key.Esc):
       pxd.closeApp()
+
     pxd.render.draw():
       pxd.render.clear(0.3, 0.3, 0.4)
       pxd.render.mode(screen)
-
+  
       block sprite:
         for i in 0..SPRITES_AMOUNT:
           p2d.draw.sprite(sprs[((frame + pawns_frame[i]) mod 6)], pawns_positions[i], SPRITE_SIZE)

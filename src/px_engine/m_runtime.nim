@@ -1,4 +1,4 @@
-import px_engine/px
+import px_engine/Px
 import px_engine/m_io
 import px_engine/m_pxd
 import px_engine/m_p2d
@@ -19,6 +19,8 @@ proc onEvent*(api: EngineAPI, ev: EventId) {.inline.} =
     of EventWindowResize:
       io.app.screen.w = pxd.events.windowResize.width
       io.app.screen.h = pxd.events.windowResize.height
+      io.vars.put("app.vars.window.w", pxd.events.windowResize.width)
+      io.vars.put("app.vars.window.h", pxd.events.windowResize.height)
     else:
       discard
 
@@ -27,7 +29,7 @@ proc onEvent*(api: EngineAPI, ev: EventId) {.inline.} =
 # @api entry
 #------------------------------------------------------------------------------------------
 proc timestepBegin*(api: EngineAPI) {.inline.} =
-  template trySnapDeltaTime(dt: var float32, ms: float32): untyped =
+  template trySnapDeltaTime(dt: var float, ms: float): untyped =
     ## Time snapping need to prevent sync issues and monitor stutternes without
     ## detecting vsync. We pretend that `deltatime` is always correct with fluctuations.
     if abs(dt-ms) < ms_fluctuation == true:
@@ -72,12 +74,10 @@ proc shouldRun*(api: EngineAPI): bool {.inline.} =
 
 
 proc init*(api: EngineAPI) {.inline.} =
-  debug.init()
   io.init()
   pxd.render.init()
   engine.initAudio()
   p2d.initRenderer()
-  pxd.platform.setVsync(io.app.settings.vsync[])
   debug.reportAppInitialized()
 
 
@@ -85,11 +85,13 @@ proc shutdown*(api: EngineAPI) {.inline.} =
   debug.shutdown()
   engine.shutdownAudio()
 
+
 proc render(api: EngineAPI) {.inline.} =
   p2d.executeRender()
   pxd.platform.swapWindow()
   pxd.metrics.app.drawcalls = pxd.metrics.app.state.drawcalls
   pxd.metrics.app.state.drawcalls = 0
+
 
 proc measureFps*(api: EngineAPI) {.inline.} =
   pxd.time.every(1.0, pm_seconds):
@@ -113,6 +115,7 @@ template run*(api: PxdAPI, code: untyped): untyped =
           timeState.stepLag -= ms
           inc pxd.metrics.app.state.ticks
       while engine.shouldRun():
+        pxd.platform.setVsync(io.app.settings.vsync[])
         engine.timestepBegin(); dt = timeState.delta
         pxd.platform.handleEvents(engine.onEvent, gameOnEvent)
         codeLoop

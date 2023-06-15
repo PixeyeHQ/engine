@@ -94,6 +94,10 @@ proc setVsync*(api: PlatformAPI, mode: bool) =
     discard sdl.glSetSwapInterval(0)
 
 
+proc setWindowTitle*(api: PlatformAPI, title: string) =
+  sdl.setWindowTitle(api.state.window, title)
+
+
 #------------------------------------------------------------------------------------------
 # @api platform events
 #------------------------------------------------------------------------------------------

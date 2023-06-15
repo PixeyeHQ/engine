@@ -4,7 +4,7 @@ import px_engine/pxd/api
 import px_engine/pxd/data/m_mem_pool
 import px_engine/pxd/data/m_mem
 import px_engine/pxd/m_debug
-import px_engine/pxd/assets/asset_image
+import px_engine/assets/asset_image
 import renderer_d
 
 

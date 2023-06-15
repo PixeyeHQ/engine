@@ -8,14 +8,13 @@ type u8*  = uint8
 type u32* = uint32
 type u16* = uint16
 type u64* = uint64
-type v8*  = char
 
 
-const ms008*:         float32 = 1/120
-const ms016*:         float32 = 1/60
-const ms032*:         float32 = 1/30
-const msfluctuation*: float32 = 0.0002
-const msgap*:         float32 = 15/60
+const ms008*:         float = 1.0/120
+const ms016*:         float = 1.0/60
+const ms032*:         float = 1.0/30
+const msfluctuation*: float = 0.0002
+const msgap*:         float = 10.0/59.0
 
 
 type SCREEN_MODE* = enum

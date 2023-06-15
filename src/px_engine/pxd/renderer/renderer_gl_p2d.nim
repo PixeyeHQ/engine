@@ -1,12 +1,12 @@
 import px_engine/vendor/gl
+import px_engine/m_assets
 import px_engine/pxd/api
 import px_engine/p2d/api
 import px_engine/pxd/m_debug
-import px_engine/pxd/m_res
 import px_engine/pxd/m_math
 import px_engine/pxd/m_metrics_app
-import px_engine/pxd/assets/asset_font
-import px_engine/pxd/assets/asset_texture
+import px_engine/assets/asset_font
+import px_engine/assets/asset_texture
 import px_engine/pxd/data/m_mem_pool
 import renderer_d
 import renderer_gl
@@ -305,8 +305,6 @@ proc render2D*(api: Engine_API): DynamicRenderer2D =
 
 proc executeRender*(api: P2d_API) =
   dynamicRender.renderer.flush()
-  # shapeRender_h.flush()
-  # textRender_h.flush()
 
 
 

@@ -1,7 +1,7 @@
 import px_engine/Px
 import px_engine/p2d/api
 import px_engine/pxd/api
-import px_engine/pxd/assets/asset_audio
+import px_engine/assets/asset_audio
 
 
 proc play*(api: P2DAudioAPI, source: Px.Music) =

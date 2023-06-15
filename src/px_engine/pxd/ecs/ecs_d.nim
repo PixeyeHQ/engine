@@ -2,7 +2,9 @@ import std/tables
 import px_engine/pxd/api
 
 
-type Ent*      = distinct u64
+type Ent*         = distinct u64
+
+
 const EntLo*: u64 = 1 shl 32 - 1
 const EntHi*: u64 = 1 shl 32
 const ECS_ENTITY_VERSION_MAX*: u32 = 1 shl 32 - 1
@@ -45,9 +47,9 @@ type Entity* = object
 type EntityComps* = seq[CId]
 type EntityRegistry* = distinct Registry
 type EntityRange* = object
-  max*:  uint32
-  min*:  uint32
-  free*: uint32
+  max*:  u32
+  min*:  u32
+  free*: u32
   next*: EcsInt
 
 type SOA_EntityInfo* = object

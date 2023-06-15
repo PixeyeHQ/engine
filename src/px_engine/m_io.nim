@@ -29,7 +29,7 @@ type AppSettings = object
 
 type AppIO* = object
   settings*:    AppSettings
-  screen*:      tuple[w: int, h: int, ratio: float]
+  screen*:      tuple[w: int, h: int]
   keepRunning*: bool
   ppu*:         int
   dataPath*:    string
@@ -65,6 +65,11 @@ proc vsync*(self: var AppIO): bool =
 
 proc setVsync*(self: var AppIO, arg: bool) =
   self.settings.vsync[] = arg
+
+
+proc aspectRatio*(self: var AppIO): float =
+  float io.app.screen.w / io.app.screen.h
+
 
 {.pop.}
 
@@ -161,3 +166,5 @@ proc init*(api: IoAPI) =
     io.app.dataPath = path
     if not dirExists(path):
       createDir(path)
+  io.app.screen.w     = io.app.settings.window.w[]
+  io.app.screen.h     = io.app.settings.window.h[]
