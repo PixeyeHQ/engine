@@ -19,8 +19,10 @@ proc onEvent*(api: EngineAPI, ev: EventId) {.inline.} =
     of EventWindowResize:
       io.app.screen.w = pxd.events.windowResize.width
       io.app.screen.h = pxd.events.windowResize.height
-      io.vars.put("app.vars.window.w", pxd.events.windowResize.width)
-      io.vars.put("app.vars.window.h", pxd.events.windowResize.height)
+      io.app.screen.ratio = float io.app.screen.w / io.app.screen.h
+      io.vars.put("app.vars.screen.w", pxd.events.windowResize.width)
+      io.vars.put("app.vars.screen.h", pxd.events.windowResize.height)
+      io.vars.put("app.vars.screen.ratio", io.app.screen.ratio)
     else:
       discard
 
@@ -108,6 +110,7 @@ template run*(api: PxdAPI, code: untyped): untyped =
   template loop(apiLoop: PxdAPI, gameOnEvent: untyped, codeLoop: untyped) =
     var dt {.inject.}: float
     block:
+      #todo: подумать нужно ли разделять на несколько кадров fixed
       template everyStep(apiStep: PxdAPI, codeStep: untyped) {.used.} =
         let ms = 1.0 / io.app.ups.float
         while ms <= timeState.stepLag:

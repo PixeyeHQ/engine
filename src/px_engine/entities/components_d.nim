@@ -1,5 +1,7 @@
 import px_engine/pxd/m_math
 import px_engine/pxd/m_ecs
+import px_engine/p2d/p2d_d
+import px_engine/assets/asset_sprite
 
 
 type
@@ -16,6 +18,7 @@ type
     planeFar*:   float
     viewportKind*: int
     zoom*:         float
+
 
   CCamera* = object
     matrixView*: Matrix
@@ -42,7 +45,16 @@ type
   CObject* = object
     parent*: Ent
     childs*: seq[Ent]
+  
 
+  CSprite* = object
+    color*: Color
+    data*:  Sprite
+
+
+  CInteraction* = object
+    rect*: Rect
+    onClick*: proc()
 
 type
   Object* = distinct Ent

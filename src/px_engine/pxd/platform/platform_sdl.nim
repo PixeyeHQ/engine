@@ -141,5 +141,14 @@ template handleEvents*(api: PlatformAPI, proc_on_event_engine: untyped, proc_on_
             pxd.events.windowResize.height = e.window.data2
             onCompile(proc_on_event_engine(pxd.events.windowResize.eventId))
             onCompile(proc_on_event_game(pxd.events.windowResize.eventId))
+        of sdl.MouseMotion:
+          let ev_input = pxd.events.input.addr
+          ev_input.mouseX = e.button.x
+          ev_input.mouseY = e.button.y
+        of sdl.MouseButtonDown:
+          if e.button.button == 1: # left
+            onCompile(proc_on_event_engine(pxd.events.mouse.eventId))
+            onCompile(proc_on_event_game(pxd.events.mouse.eventId))
+          discard
         else:
           discard

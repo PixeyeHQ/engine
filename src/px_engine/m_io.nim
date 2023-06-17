@@ -1,6 +1,5 @@
 import std/os
 import std/strformat
-import px_engine/Px
 import px_engine/pxd/api
 import px_engine/pxd/m_vars
 import px_engine/pxd/m_pods
@@ -13,6 +12,7 @@ io.vars.put("app.developer", "PXD")
 io.vars.put("app.title", "New Project")
 io.vars.put("app.ups", 60)
 io.vars.put("app.fps", 60)
+io.vars.put("app.ppu", 100)
 io.vars.put("app.vsync", false)
 io.vars.put("app.window.w", 1280)
 io.vars.put("app.window.h", 720)
@@ -29,7 +29,8 @@ type AppSettings = object
 
 type AppIO* = object
   settings*:    AppSettings
-  screen*:      tuple[w: int, h: int]
+  screen*:      tuple[w: int, h: int, ratio: float]
+  viewport*:    tuple[w: float, h: float]
   keepRunning*: bool
   ppu*:         int
   dataPath*:    string
@@ -37,7 +38,7 @@ type AppIO* = object
 
 var app_io = AppIO()
 app_io.keepRunning = true
-app_io.ppu         = 100
+app_io.ppu               = io.vars.get("app.ppu", int)[]
 app_io.settings.window.w = io.vars.get("app.window.w", int)
 app_io.settings.window.h = io.vars.get("app.window.h", int)
 app_io.settings.fps      = io.vars.get("app.fps", int)
@@ -68,7 +69,7 @@ proc setVsync*(self: var AppIO, arg: bool) =
 
 
 proc aspectRatio*(self: var AppIO): float =
-  float io.app.screen.w / io.app.screen.h
+  float io.app.screen.ratio
 
 
 {.pop.}
@@ -87,6 +88,10 @@ template ppu*(x: SomeNumber): float =
   ## Pixel Per Unit
   x * io.app.ppu.f32
 
+
+template px*(x: SomeNumber): float =
+  ## Pixel Per Unit
+  x / io.app.ppu.f32
 
 #------------------------------------------------------------------------------------------
 # @api io paths
@@ -119,7 +124,7 @@ proc pathWithoutExtension*(api: IoAPI, path: string): string =
 const EventEngine = EventId.Next(999_999)
 
 
-template genEventAPI*(hook: PxdAPI, event: untyped, typeObjId: untyped, procId: untyped) {.dirty.} =
+template genEventAPI*(hook: PxdAPI, event: untyped, typeObjId: untyped, procId: untyped)=
   var eventObj: typeObjId
   
   const event* {.inject.} = EventId.Next
@@ -133,12 +138,14 @@ template genEventAPI*(hook: PxdAPI, event: untyped) {.dirty.} =
   const event* {.inject.} = EventId.Next
 
 
-type EventWindowResizeObj = object
+type EventObj_WindowResize = object
   width*:  int
   height*: int
+type EventObj_Mouse = object
 
 
-pxd.genEventAPI(EventWindowResize, EventWindowResizeObj, windowResize)
+pxd.genEventAPI(EventWindowResize, EventObj_WindowResize, windowResize)
+pxd.genEventAPI(EventMouse, EventObj_Mouse, mouse)
 
 
 #------------------------------------------------------------------------------------------
@@ -168,3 +175,4 @@ proc init*(api: IoAPI) =
       createDir(path)
   io.app.screen.w     = io.app.settings.window.w[]
   io.app.screen.h     = io.app.settings.window.h[]
+  io.app.screen.ratio = float io.app.screen.w / io.app.screen.h

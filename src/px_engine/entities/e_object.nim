@@ -12,6 +12,7 @@ proc obj*(api: PxdCreateAPI, reg: Registry, position: Vec3, euler: Vec3): Object
   ctransform.position = position
   result = Object entity
 
+
 proc obj*(api: PxdCreateAPI, position: Vec3, euler: Vec3): Object =
   let reg = pxd.ecs.getRegistry()
   obj(api, reg, position, euler)

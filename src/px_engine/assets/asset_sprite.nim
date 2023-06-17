@@ -1,11 +1,10 @@
 import std/json
 import std/tables
-import px_engine/px
-import px_engine/m_io
 import px_engine/pxd/api
 import px_engine/pxd/m_math
 import px_engine/pxd/m_pods
 import px_engine/pxd/m_debug
+import px_engine/pxd/renderer/renderer_d
 import px_engine/pxd/data/m_mem_pool
 import px_engine/assets/asset_texture
 
@@ -69,7 +68,7 @@ proc load*(api: EngineAPI, p: SpriteParams, typeof: typedesc[Sprite]): Sprite =
   let top:     f32 = 1 - offseth
   let bottom:  f32 = 1 - (offseth + p.sprh / p.texh)
   result.texId     = p.texId
-  result.scale     = ppu.f32
+  result.scale     = 1.0#ppu.f32
   result.size      = vec(p.sprw, p.sprh) / ppu
   result.origin    = vec(p.px, p.py)
   result.texcoords = [(left,bottom),(right,bottom),(right,top),(left,top)]
@@ -88,6 +87,7 @@ proc loadFontSprite*(api: EngineAPI, p: SpriteParams): Sprite =
   result.size      = vec(p.sprw, p.sprh)
   result.origin    = vec(p.px, p.py)
   result.texcoords = [(left,bottom),(right,bottom),(right,top),(left,top)]
+
 
 #------------------------------------------------------------------------------------------
 # @api sprite atlas

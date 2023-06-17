@@ -65,6 +65,8 @@ proc viewport*(x: int, y: int) =
   let viewportx = i32(x / 2 - aspectWidth.f32 / 2)
   let viewporty = i32(y / 2 - aspectHeight.f32 / 2)
   glViewport(viewportx,viewporty,aspectWidth.int,aspectHeight.int)
+  io.app.viewport.w = aspectWidth - viewportx.float
+  io.app.viewport.h = aspectHeight - viewporty.float
   #   of vp_fit:
   #     let aspectRatio  = global.getAspectRatio()
   #     var aspectWidth  = x.f32
@@ -87,8 +89,8 @@ proc viewport*(x: int, y: int) =
 
 proc mode*(api: RenderAPI, camera: Camera) =
   renderState()
-  viewport(io.app.screen.w, io.app.screen.h)
   pxd.render.frame.umvp.identity()
+  viewport(io.app.screen.w, io.app.screen.h)
   let ccamera    = camera.ccamera
   let ctransform = camera.ctransform
   let translation = ctransform.getPositionMatrix()
@@ -98,6 +100,7 @@ proc mode*(api: RenderAPI, camera: Camera) =
   ccamera.matrixView = multiply(ccamera.matrixView, rotation)
   ccamera.matrixView = multiply(ccamera.matrixView, translation)
   ccamera.matrixViewInversed = ccamera.matrixView.inverse()
+  pxd.render.frame.uview     = ccamera.matrixView 
   let n = ccamera.planeNear
   let f = ccamera.planeFar
   if ccamera.projection == ProjectionKind.Perspective:
@@ -106,8 +109,8 @@ proc mode*(api: RenderAPI, camera: Camera) =
     let h = ccamera.orthosize * ccamera.zoom
     let w = h * aspect
     pxd.render.frame.umvp.ortho(-w,w,-h,h,n,f)
+    pxd.render.frame.uproj = pxd.render.frame.umvp
     pxd.render.frame.umvp = multiply(pxd.render.frame.umvp, ccamera.matrixViewInversed)
-  
   
     #ccamera.matrixProj.ortho(-w,w,-h,h,n,f)
     #pxd.render.frame.umvp.ortho(-w,w,h,h,n,f)

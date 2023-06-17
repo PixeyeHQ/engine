@@ -93,6 +93,7 @@ type Batch2d* = object
 
 type RenderFrame* = object
   umvp*:  Matrix
+  uproj*: Matrix
   uview*: Matrix
 
 

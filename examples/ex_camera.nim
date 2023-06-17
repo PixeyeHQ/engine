@@ -3,7 +3,7 @@ import px_engine
 
 pxd.run():
   io.vars.put("app.ups", 60)  # rewrite settings
-  io.vars.put("app.fps", 144) # rewrite settings
+  io.vars.put("app.fps", 60) # rewrite settings
   var atlas = pxd.res.get("./assets/images/atlases/player.json").spriteAtlas
   var spr   = atlas.sprite["player-0"]
   var cameraCfg = ConfigCamera()
