@@ -287,6 +287,7 @@ proc add*(self: var EntsPack, eid: EcsInt) =
     self.packed[indexNext] = EId eid
   else:
     self.packed.add(EId eid)
+  self.changed = true
 
 
 proc getAdd*(self: var EntsPack, eid: EcsInt): int =
@@ -296,6 +297,7 @@ proc getAdd*(self: var EntsPack, eid: EcsInt): int =
     self.packed[result] = EId eid
   else:
     self.packed.add(EId eid)
+  self.changed = true
 
 
 proc delete*(self: var EntsPack, eid: EcsInt) {.inline.} =
@@ -307,6 +309,7 @@ proc delete*(self: var EntsPack, eid: EcsInt) {.inline.} =
   swap(sparse[u32(packed[deleted])], sparse[u32(packed[last])])
   sparse[eid] = Ent.Nil
   dec self.count
+  self.changed = true
 
 
 proc delete*(self: var EntsPack, eid: EcsInt, deleted: var u32, last: var u32) {.inline.}  =
@@ -318,7 +321,8 @@ proc delete*(self: var EntsPack, eid: EcsInt, deleted: var u32, last: var u32) {
   swap(sparse[u32(packed[deleted])], sparse[u32(packed[last])])
   sparse[eid] = Ent.Nil
   dec self.count
-
+  self.changed = true
+  
 
 proc has*(self: var EntsPack, entityId: SomeNumber): bool {.inline.} =
   self.sparse[entityId] < Ent.Nil
@@ -333,6 +337,49 @@ proc reset*(self: var EntsPack) =
     self.sparse[i] = Ent.Nil
   self.packed.setLen(0)
   self.count  = 0
+
+
+proc siftDown(data: var seq[EId], startIdx, endIdx: int, cmp: EntityComparer) =
+  var rootIdx = startIdx
+  while true:
+    let leftChildIdx = 2 * rootIdx + 1
+    if leftChildIdx >= endIdx:
+      break
+    let rightChildIdx = leftChildIdx + 1
+    let swapIdx =
+      if rightChildIdx >= endIdx or cmp(data[leftChildIdx], data[rightChildIdx]) > 0:
+        leftChildIdx
+      else:
+        rightChildIdx
+    if cmp(data[swapIdx], data[rootIdx]) > 0:
+      swap(data[rootIdx], data[swapIdx])
+      rootIdx = swapIdx
+    else:
+      break
+
+
+proc sort*(data: var seq[EId], length: int, cmp: EntityComparer) =
+  # Build binary heap
+  for i in 1..<length:
+    var childIdx = i
+    while childIdx > 0:
+      let parentIdx = (childIdx - 1) div 2
+      if cmp(data[childIdx], data[parentIdx]) > 0:
+        swap(data[childIdx], data[parentIdx])
+        childIdx = parentIdx
+      else:
+        break
+  # Perform heap sort
+  var endIdx = length - 1
+  while endIdx > 0:
+    swap(data[0],data[endIdx])
+    siftDown(data,0,endIdx,cmp)
+    dec endIdx
+
+
+proc trySort*(data: var EntsPack, cmp: EntityComparer) =
+  if data.changed:
+    sort(data.packed, data.count, cmp)
 
 
 #------------------------------------------------------------------------------------------
@@ -378,10 +425,12 @@ proc getGroup(reg: Registry, cmask: ComponentMask): EntityGroup =
 
 proc add(group: EntityGroup, eid: EcsInt) {.inline.} =
   group.get.ents.add(eid)
+  group.changed = true
 
 
 proc delete(group: EntityGroup, eid: EcsInt) {.inline.} =
   group.get.ents.delete(eid)
+  group.changed = true
 
 
 proc partof*(eid: EcsInt, group: EntityGroup): bool =
@@ -447,6 +496,13 @@ proc updateGroups*(eid: EcsInt, cid: int) {.inline.} =
   impl_updateGroups()
 
 
+proc tryGroupSort*(data: var EntityGroup, cmp: EntityComparer) =
+  if data.changed:
+    sort(data.ents.packed, data.ents.count, cmp)
+    data.changed = false
+
+
+# DEFAULT
 iterator components*[C1](api; c1: typedesc[C1]): ptr C1 =
   let st  = C1.Storage()
   var index = st.ents.count
@@ -454,14 +510,12 @@ iterator components*[C1](api; c1: typedesc[C1]): ptr C1 =
     dec index
     yield st.comps[index].addr
 
-
 iterator components*[C1](api; e: typedesc[Ent], c1: typedesc[C1]): tuple[eid: EId, c1: ptr C1] =
   let st  = C1.Storage()
   var index = st.ents.count
   while 0 < index:
     dec index
     yield (st.ents.packed[index], st.comps[index].addr)
-
 
 iterator components*[C1,C2](api; c1: typedesc[C1], c2: typedesc[C2]): tuple[c1: ptr C1, c2: ptr C2] =
   let st1  = C1.Storage()
@@ -477,7 +531,6 @@ iterator components*[C1,C2](api; c1: typedesc[C1], c2: typedesc[C2]): tuple[c1: 
     while 0 < index:
      dec index
      yield (st1.comps[index].addr, C2.Component(st1.ents.packed[index]))
-
 
 iterator components*[C1,C2](api; e: typedesc[Ent], c1: typedesc[C1], c2: typedesc[C2]): tuple[eid: EId, c1: ptr C1, c2: ptr C2] =
   let st1  = C1.Storage()
@@ -495,6 +548,54 @@ iterator components*[C1,C2](api; e: typedesc[Ent], c1: typedesc[C1], c2: typedes
      dec index
      let eid = st1.ents.packed[index]
      yield (eid, st1.comps[index].addr, C2.Component(eid))
+
+
+# INVERSED
+iterator componentsInversed*[C1](api; c1: typedesc[C1]): ptr C1 =
+  let st  = C1.Storage()
+  var index = 0
+  while index < st.ents.count:
+    yield st.comps[index].addr
+    inc index
+
+iterator componentsInversed*[C1](api; e: typedesc[Ent], c1: typedesc[C1]): tuple[eid: EId, c1: ptr C1] =
+  let st  = C1.Storage()
+  var index = 0
+  while index < st.ents.count:
+    yield (st.ents.packed[index], st.comps[index].addr)
+    inc index
+
+iterator componentsInversed*[C1,C2](api; c1: typedesc[C1], c2: typedesc[C2]): tuple[c1: ptr C1, c2: ptr C2] =
+  let st1  = C1.Storage()
+  let st2  = C2.Storage()
+  var index = 0
+  if st2.ents.count < st1.ents.count:
+    index = 0
+    while index < st2.ents.count:
+      yield (C1.Component(st2.ents.packed[index]), st2.comps[index].addr)
+      inc index
+  else:
+    index = 0
+    while index < st1.ents.count:
+     yield (st1.comps[index].addr, C2.Component(st1.ents.packed[index]))
+     inc index
+
+iterator componentsInversed*[C1,C2](api; e: typedesc[Ent], c1: typedesc[C1], c2: typedesc[C2]): tuple[eid: EId, c1: ptr C1, c2: ptr C2] =
+  let st1  = C1.Storage()
+  let st2  = C2.Storage()
+  var index = 0
+  if st2.ents.count < st1.ents.count:
+    index = 0
+    while index < st2.ents.count:
+      let eid = st2.ents.packed[index]
+      yield (eid, C1.Component(eid), st2.comps[index].addr)
+      inc index
+  else:
+    index = 0
+    while index < st1.ents.count:
+     let eid = st1.ents.packed[index]
+     yield (eid, st1.comps[index].addr, C2.Component(eid))
+     inc index
 
 
 #------------------------------------------------------------------------------------------
@@ -579,7 +680,7 @@ template GEN_ECS_COMPONENT_API(T: typedesc, cmode: int, initSize: int) =
   type CPtr     = ptr T
   type CStorage = object
     comps*: seq[T]
-    ents*:   EntsPack
+    ents*:  EntsPack
     active: bool
 
   proc growStorage(reg: Registry, _: ctype)
@@ -705,7 +806,8 @@ template GEN_ECS_COMPONENT_API(T: typedesc, cmode: int, initSize: int) =
         discard addComponent(self.id, ctype)
       let slot = component(self.id, ctype)
       slot[] = amount.T
-  
+      updateGroups(self.id, ctypeId)
+
 
     proc add*(builder: var EntityBuilder, _: ctype, amount: int) =
       builder.ent.put(ctype,amount)
@@ -716,6 +818,7 @@ template GEN_ECS_COMPONENT_API(T: typedesc, cmode: int, initSize: int) =
         discard addComponent(self.id, ctype)
       let slot = component(self.id, ctype)
       slot[].int += 1
+      updateGroups(self.id, ctypeId)
 
 
     proc inc*(self: Ent|EId, _: ctype, amount: int) =
@@ -724,7 +827,8 @@ template GEN_ECS_COMPONENT_API(T: typedesc, cmode: int, initSize: int) =
         discard addComponent(self.id, ctype)
       var slot = component(self.id, ctype)
       slot[].int += amount
-   
+      updateGroups(self.id, ctypeId)
+
    
     proc remove*(self: Ent|EId, _: ctype) {.inline.} =
       deleteComponentBegin(self.id, ctype)
@@ -735,6 +839,7 @@ template GEN_ECS_COMPONENT_API(T: typedesc, cmode: int, initSize: int) =
       slot[].int -= 1
       if slot[].int <= 0:
         remove(self, ctype)
+      updateGroups(self.id, ctypeId)
 
 
     proc dec*(self: Ent|EId, _: ctype, amount: int) =
@@ -742,6 +847,7 @@ template GEN_ECS_COMPONENT_API(T: typedesc, cmode: int, initSize: int) =
       slot[].int -= amount
       if slot[].int <= 0:
         remove(self, ctype)
+      updateGroups(self.id, ctypeId)
 
 
 macro gen_component_macro(ctype: typed, initSize: static int = 0): untyped =
@@ -821,24 +927,32 @@ proc count*(system: System): int =
     system.get.group.get.ents.count.int
 
 
+proc sort*(system: System, cmp: EntityComparer) {.inline.} =
+  let ents = system.group.ents.addr
+  sort(ents.packed, ents.count, cmp)
+
+
 iterator entities*(system: System): EId {.inline.} =
   let system = system.get.addr
   let group = system.group.get.addr
   var index = group.ents.count
- # if system.rules.len == 0:
   while 0 < index:
     dec index
     yield group.ents.packed[index]
-  # else:
-  #   let rules = system.rules.addr
-  #   while 0 < index:
-  #     dec index
-  #     let e = group.ents.packed[index]
-  #     block iter:
-  #       for rule in rules[].mitems:
-  #         if rule(e) == false:
-  #           break iter
-  #       yield e
+
+
+template onChanged*(system: System, code: untyped): untyped =
+  if system.group.changed:
+    code
+
+
+iterator entitiesInversed*(system: System): EId {.inline.} =
+  let system = system.get.addr
+  let group = system.group.get.addr
+  var index = 0
+  while index < group.ents.count:
+    yield group.ents.packed[index]
+    inc index
 
 
 #------------------------------------------------------------------------------------------
@@ -888,3 +1002,8 @@ proc build*(builder: var SystemBuilder): System =
   builder.system.get.group = getGroup(builder.system.get.reg, builder.system.get.mask)
   builder.system
 
+
+proc update*(api;) =
+  for reg in io.regs.table.values:
+    for group in reg.entityGroups.items:
+      group.changed = false

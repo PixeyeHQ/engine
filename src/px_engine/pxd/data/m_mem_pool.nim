@@ -201,8 +201,8 @@ import px_engine/pxd/m_key
 
 
 type MemTable*[T,H] = object
-  table: Table[KeyId,H]
-
+  table*: Table[KeyId,H]
+  
 
 proc get*[T,H](map: var MemTable[T,H], tag: string): H =
   var key = toKeyId(tag)

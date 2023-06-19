@@ -1,3 +1,4 @@
+
 import std/strutils
 import std/macros
 import std/strformat
@@ -185,7 +186,7 @@ proc inLogThreadRun() {.thread.} =
       var text_log_std = ""
       var text_trace = ""
 
-     # if (msg.t_lvl == lv_trace or msg.t_lvl == lv_error or msg.t_lvl == lv_warn):
+    # if (msg.t_lvl == lv_trace or msg.t_lvl == lv_error or msg.t_lvl == lv_warn):
       text_log = &"{time_str} {names[msg.t_lvl]} {msg.t_txt}"
       text_log_std = &"{names_std[msg.t_lvl]} {msg.t_txt}"
       var sym = "⯆"

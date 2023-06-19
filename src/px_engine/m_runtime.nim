@@ -123,6 +123,7 @@ template run*(api: PxdAPI, code: untyped): untyped =
         pxd.platform.handleEvents(engine.onEvent, gameOnEvent)
         codeLoop
         engine.render()
+        pxd.ecs.update()
         engine.timestepFinish()
         engine.measureFps()
   template loop(apiLoop: PxdAPI, codeLoop: untyped) {.dirty.} =

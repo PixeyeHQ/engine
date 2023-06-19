@@ -8,6 +8,7 @@ export m_io except
   init
 
 
+
 import px_engine/m_pxd
 export m_pxd except
   initRenderer,
@@ -28,6 +29,10 @@ export m_assets
 
 import px_engine/m_entities
 export m_entities
+
+
+import px_engine/m_io_mouse
+export m_io_mouse
 
 
 import std/tables

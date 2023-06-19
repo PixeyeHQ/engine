@@ -155,12 +155,12 @@ template setType*(self: DynamicRenderer2D, kind: Render2D_Kind) {.dirty.} =
 template draw*(self: Renderer2D, pindexCount: static i32, code: untyped) {.dirty.} =
   let renderer = self
   renderer.tryFlush()
-  let batch = renderer.batch.addr
+  let batch         = renderer.batch.addr
   let buffer        = batch.vertices.addr
-  batch.indexCount += pindexCount
   var nvertexColor: Color
   block:
     code
+  batch.indexCount += pindexCount
 
 
 template color*(color: Color) {.dirty.} =

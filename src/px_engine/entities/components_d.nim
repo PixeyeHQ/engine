@@ -48,8 +48,9 @@ type
   
 
   CSprite* = object
-    color*: Color
-    data*:  Sprite
+    color*:  Color
+    height*: float
+    data*:   Sprite
 
 
   CInteraction* = object

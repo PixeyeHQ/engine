@@ -75,6 +75,8 @@ benchmark ECS_ENTITY_MAX, 1:
     e.get ctransform_t
     e.get cobject_t
 
+
+pxd.ecs.update() # normally ecs update works internally via pxd.run
 debug.shutdown()
 
 #[

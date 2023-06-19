@@ -23,6 +23,7 @@ type CId*      = u16
 type EId*      = distinct u32
 type Registry* = distinct Handle
 type EcsBuilder* = distinct object
+type EntityComparer* = proc(a,b:EId):int
 
 
 type ComponentMaskPart* = object
@@ -39,7 +40,7 @@ type EntsPack* = object
   sparse*: seq[EcsInt] # loosely packed pointers to dense elements. Example: 0,1,2,nil,3
   packed*: seq[EId]    # tightly packed ids of entities. Example: 0,1,2,4
   count*:  int
-
+  changed*: bool
 
 type Entity* = object
   id*:      u32
@@ -67,19 +68,19 @@ type EntityBuilder* = object
 type EntityGroupObj* = object
   cmask*:   ComponentMask
   ents*:    EntsPack
+  changed*: bool
 
 
 type EntityGroup* = distinct Handle
 
 
-type SystemObj* = object
-  mask*:  ComponentMask
-  group*: EntityGroup
-  reg*:   Registry
-  #rules*: seq[proc(e: EId):bool{.closure.}]
+type 
+  SystemObj* = object
+    mask*:  ComponentMask
+    group*: EntityGroup
+    reg*:   Registry
 
-
-type System* = distinct Handle
+  System* = distinct Handle
 
 
 type SystemBuilder* = object

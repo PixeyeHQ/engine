@@ -27,6 +27,7 @@ type AppSettings = object
   fps*: ptr int
   vsync*: ptr bool
 
+
 type AppIO* = object
   settings*:    AppSettings
   screen*:      tuple[w: int, h: int, ratio: float]
