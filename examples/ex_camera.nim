@@ -1,18 +1,18 @@
 import px_engine
-
+let io = pxd.io
 
 pxd.run():
-  io.vars.put("app.ups", 60)  # rewrite settings
-  io.vars.put("app.fps", 60) # rewrite settings
+  pxd.vars.put("app.ups", 60)  # rewrite settings
+  pxd.vars.put("app.fps", 60) # rewrite settings
   var atlas = pxd.res.get("./assets/images/atlases/player.json").spriteAtlas
   var spr   = atlas.sprite["player-0"]
-  var cameraCfg = ConfigCamera()
+  var cameraDef: CameraDef
   block: # setup camera cfg
-    cameraCfg.orthosize  = 24
-    cameraCfg.planeNear  = 0.1
-    cameraCfg.planeFar   = 1000
-    cameraCfg.projection = ProjectionKind.Orthographic
-  let camera = pxd.create.camera(cameraCfg)
+    cameraDef.orthosize  = 24
+    cameraDef.planeNear  = 0.1
+    cameraDef.planeFar   = 1000
+    cameraDef.projection = ProjectionKind.Orthographic
+  let camera = pxd.create.camera(cameraDef)
   let input  = pxd.inputs.get()
   pxd.loop():
     block: # events
@@ -30,7 +30,7 @@ pxd.run():
     block: # debug
       let title = &"Drawcalls: {$pxd.metrics.app.drawcalls} {$pxd.metrics.app}  ms: {dt*1000}"
       pxd.platform.setWindowTitle(title)
-    pxd.render.draw():
+    pxd.draw():
       pxd.render.clear(0.4,0.4,0.5)
       block: # render game
         pxd.render.mode(camera)

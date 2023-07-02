@@ -5,7 +5,7 @@ import std/strformat
 import std/tables
 import std/monotimes
 import std/times
-import px_engine/pxd/api
+import px_engine/pxd/definition/api
 export strformat.`&`
 export api.debug
 
@@ -242,7 +242,7 @@ proc addLog*(api: DebugAPI, file_name: string) =
 #------------------------------------------------------------------------------------------
 proc init*(api: DebugAPI) =
   open(channel)
-  debug.addLog(stdout)
+  pxd.debug.addLog(stdout)
   createThread(thread, inLogThreadRun)
 
 
@@ -383,24 +383,24 @@ template benchmark*(steps: int, iterations: int, code: untyped) =
 # @api errors
 #------------------------------------------------------------------------------------------
 proc fatal*(api: DebugAPI, message: string) =
-  debug.error(message, 1)
-  debug.terminateApp()
+  pxd.debug.error(message, 1)
+  pxd.debug.terminateApp()
 
 
 proc fatal*(api: DebugAPI, errotType: string, message: string) =
   var composedMessage: string
   composedMessage.add(&"[{errotType}] ")
   composedMessage.add(message)
-  debug.error(composedMessage, 1)
-  debug.terminateApp()
+  pxd.debug.error(composedMessage, 1)
+  pxd.debug.terminateApp()
 
 
 proc fatal*(api: DebugAPI, errotType: string, message: string, traceCutSteps: int) =
   var composedMessage: string
   composedMessage.add(&"[{errotType}] ")
   composedMessage.add(message)
-  debug.error(composedMessage, 1 + traceCutSteps)
-  debug.terminateApp()
+  pxd.debug.error(composedMessage, 1 + traceCutSteps)
+  pxd.debug.terminateApp()
 
 
 #------------------------------------------------------------------------------------------
@@ -412,7 +412,7 @@ template assert*(api: DebugAPI, source: untyped) =
       let tag  {.inject.} = source[1]
       let desc {.inject.} = source[2]
       if not source[0]:
-        debug.error(&"[{tag}] {desc}",1)
+        pxd.debug.error(&"[{tag}] {desc}",1)
 
 
 template requireMessage*(pmessage: string, pfileName: string, pprocName: string): string =
@@ -426,4 +426,4 @@ template requireMessage*(pmessage: string, pfileName: string, pprocName: string)
       &"{message}\n⯈ {filename} {procname}"
 
 
-debug.init()
+pxd.debug.init()

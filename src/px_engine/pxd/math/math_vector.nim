@@ -3,7 +3,6 @@
 import std/math,random
 import math_d
 
-
 when defined(v32):
     type float = float32
 
@@ -87,8 +86,21 @@ proc `+`*(a: Vec, b: Vec): Vec {.inline.} =
     (a.x+b.x, a.y+b.y, a.z+b.z, a.w+b.w)
 
 
+proc `+`*(a: Vec2, b: Vec2): Vec2 {.inline.} =
+    (a.x+b.x, a.y+b.y)
+
+
 proc `-`*(a: Vec, b: Vec): Vec {.inline.} =
     (a.x-b.x, a.y-b.y, a.z-b.z, a.w-b.w)
+
+
+proc `-`*(a: Vec3, b: Vec3): Vec3 {.inline.} =
+    (a.x-b.x, a.y-b.y, a.z-b.z)
+
+
+proc `-`*(a: Vec2, b: Vec2): Vec2 {.inline.} =
+    (a.x-b.x, a.y-b.y)
+
 
 proc `-`*(a: Vec, b: SomeNumber): Vec2 {.inline.} =
     vec2(a.x-b, a.y-b)
@@ -181,13 +193,26 @@ proc `/=` *(self: var Vec3, other: float = 1) =
     self.z = self.z/other
 
 
+proc distanceSquared*(a, b: Vec2): float =
+  let dx = b.x - a.x
+  let dy = b.y - a.y
+  return dx * dx + dy * dy
 
-proc sqrmagnitude*(vec: Vec): float {.inline.} =
+
+proc sqrMagnitude*(vec: Vec): float {.inline.} =
     vec.x * vec.x + vec.y * vec.y + vec.z * vec.z
 
 
 proc magnitude*(vec: Vec): float {.inline.} =
     sqrt(vec.x * vec.x + vec.y * vec.y + vec.z * vec.z)
+
+
+proc magnitude*(vec: Vec3): float {.inline.} =
+    sqrt(vec.x * vec.x + vec.y * vec.y + vec.z * vec.z)
+
+
+proc getNormal*(edge: Vec2): Vec2 {.inline.} =
+    vec2(-edge.y, edge.x)
 
 
 proc normalize*(self: var Vec) =
@@ -206,6 +231,26 @@ proc normalized*(vec: Vec): Vec =
     return v
 
 
+proc normalize*(self: var Vec3) =
+    var arg = self.magnitude
+
+    if arg != 0:
+        arg = 1.0/arg
+    self.x *= arg
+    self.y *= arg
+    self.z *= arg
+
+
+proc normalized*(vec: Vec3): Vec3 =
+    var v = vec
+    normalize(v)
+    return v
+
+
+proc atan2*(y,x: float): float {.inline.} =
+  return math.arctan2(y,x)
+
+
 proc cross*(vec1, vec2: Vec): Vec {.inline.} =
     vec(
         #x 
@@ -216,6 +261,10 @@ proc cross*(vec1, vec2: Vec): Vec {.inline.} =
         vec1.x * vec2.y - vec1.y * vec2.x,
         #w
         0)
+
+
+proc cross2*(a, b, c: Vec2): float =
+  (b.x - a.x) * (c.y - a.y) - (b.y - a.y) * (c.x - a.x)
 
 
 proc dot2*(vec1, vec2: Vec): float {.inline.} =
@@ -240,6 +289,11 @@ proc rand*(self: var Vec, arg1,arg2,arg3: float) =
     self.x = rand(-arg1..arg1)
     self.y = rand(-arg2..arg2)
     self.z = rand(-arg3..arg3)
+
+
+template vecr*(x,y,z,ox,oy,cos,sin: float): Vec3 =
+  vec((x - ox) * cos - (y - oy) * -sin + ox, 
+      (x - ox) * -sin + (y - oy) * cos + oy, z)
 
 
 converter to_vec*(v: Vec2): Vec {.inline.} = (v.x,v.y,0.float,0.float)

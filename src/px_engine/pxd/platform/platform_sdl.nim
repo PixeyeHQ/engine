@@ -1,10 +1,8 @@
 import std/times
 import px_engine/vendor/sdl
-import px_engine/m_io
-import px_engine/pxd/api
+import px_engine/pxd/definition/api
 import px_engine/pxd/m_debug
 import px_engine/pxd/m_vars
-import px_engine/pxd/inputs/inputs_event
 import platform_d
 
 #------------------------------------------------------------------------------------------
@@ -12,11 +10,12 @@ import platform_d
 #------------------------------------------------------------------------------------------
 type PlatformState = object
   window: pointer
-  timeStart: u64
-  timeFreq:  u64
+  timeStart: uint64
+  timeFreq:  uint64
 
 
 var platformState = PlatformState()
+let io            = pxd.io
 
 
 proc state (api: PlatformAPI): var PlatformState =
@@ -33,7 +32,7 @@ proc reportInitPlatform(api: DebugAPI) =
   elif defined(macosx): osname = "Macos"
   elif defined(linux): osname = "linux"
   let message = &"\n System: {osname}\n Started: {time}"
-  io.vars.get("runtime.initMessage", string)[] = message
+  pxd.vars.get("runtime.initMessage", string)[] = message
 
 
 proc initGl*(api: PlatformAPI): pointer {.discardable.} =
@@ -41,30 +40,28 @@ proc initGl*(api: PlatformAPI): pointer {.discardable.} =
   discard sdl.glSetAttribute(sdl.GL_CONTEXT_MINOR_VERSION, 6)
   result = sdl.glGetProcAddress
   if result == nil:
-    debug.fatal("Platform", &"Could not load GL.\n{sdl.getError()}")
+    pxd.debug.fatal("Platform", &"Could not load GL.\n{sdl.getError()}")
 
 
 proc init*(api: PlatformAPI) =
   if sdl.init(sdl.INIT_VIDEO and sdl.INIT_AUDIO) < 0:
-    debug.fatal("Platform", &"Could not initialize SDL.\n{sdl.getError()}")
-  debug.reportInitPlatform()
+    pxd.debug.fatal("Platform", &"Could not initialize SDL.\n{sdl.getError()}")
+  pxd.debug.reportInitPlatform()
   api.state.timeStart = sdl.getPerformanceCounter()
   api.state.timeFreq  = sdl.getPerformanceFrequency()
 
 
 proc createWindow*(api: PlatformAPI): pointer {.discardable.} =
-  let title  = io.vars.get("app.title", string)[]
-  let width  = io.vars.get("app.window.w", int)[]
-  let height = io.vars.get("app.window.h", int)[]
+  let title  = pxd.vars.get("app.title", string)[]
+  let width  = pxd.vars.get("app.window.w", int)[]
+  let height = pxd.vars.get("app.window.h", int)[]
   let windowFlags: u32 = sdl.WindowResizable or sdl.WindowShown or sdl.WindowOpenGL
   api.state.window = sdl.createWindow(title.cstring, WINDOWPOS_UNDEFINED, WINDOWPOS_UNDEFINED, width, height, windowFlags)
   result = api.state.window
   if result == nil:
-    debug.fatal("Platform", &"Could not initialize window.\n{sdl.getError()}")
-  io.vars.put("app.vars.window.w", width)
-  io.vars.put("app.vars.window.h", height)
-  io.app.screen.w = width
-  io.app.screen.h = height
+    pxd.debug.fatal("Platform", &"Could not initialize window.\n{sdl.getError()}")
+  pxd.vars.put("app.vars.window.w", width)
+  pxd.vars.put("app.vars.window.h", height)
 
 
 proc createGlContext*(api: PlatformAPI): pointer {.discardable.} =

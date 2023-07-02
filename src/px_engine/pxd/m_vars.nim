@@ -1,5 +1,5 @@
 import std/tables
-import px_engine/pxd/api
+import px_engine/pxd/definition/api
 import px_engine/pxd/m_pods
 import px_engine/pxd/m_vars_d
 export m_vars_d.VARS_DONT_SAVE

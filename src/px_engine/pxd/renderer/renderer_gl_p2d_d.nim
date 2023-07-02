@@ -1,4 +1,5 @@
-import px_engine/pxd/api
+import px_engine/pxd/definition/api
+import px_engine/pxd/res/asset_shader
 import renderer_gl_d
 
 

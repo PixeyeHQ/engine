@@ -14,7 +14,7 @@ type CPawn = object
 type TagDamaged = distinct int
 
 # Normally debug initialization and shutdown are called from pxd.run, but in this example we have to call them explicitly as we don't do pxd.run
-debug.init()
+pxd.debug.init()
 
 
 pxd.ecs.genComponent(CTransform, ECS_ENTITY_MAX)
@@ -77,7 +77,7 @@ benchmark ECS_ENTITY_MAX, 1:
 
 
 pxd.ecs.update() # normally ecs update works internally via pxd.run
-debug.shutdown()
+pxd.debug.shutdown()
 
 #[
   [*] 16k

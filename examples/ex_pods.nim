@@ -3,8 +3,9 @@
 ]#
 import std/strutils
 import px_engine
-import px_engine/pxd/pods/pods # you need to import this in order to make custom pod hooks. #todo: this must be done another way I think.
 
+
+let io = pxd.io
 
 type UnitKind = enum
   Melee = "Melee",

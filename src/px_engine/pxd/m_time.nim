@@ -1,8 +1,7 @@
-import px_engine/px
-import px_engine/pxd/api
+import px_engine/pxd/definition/api
 
 
-type TimeState* = object
+type TimeState = object
   scale*: float
   delta*: float
   deltaUnscaled*: float

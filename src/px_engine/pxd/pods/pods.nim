@@ -10,6 +10,7 @@ import std/strutils
 import std/strformat
 import std/typetraits
 import px_engine/pxd/m_debug
+import px_engine/pxd/definition/api
 import pods_d
 
 
@@ -28,6 +29,10 @@ const debug_tag                 = "POD"
 
 proc toPodStringSparseHook(p: var PodWriter, pod: var Pod)
 proc toPodStringDenseHook(p: var PodWriter, pod: var Pod)
+
+
+let debug = pxd.debug
+
 
 var podConfigDefault*  = PodSettings()
 podConfigDefault.style = PodStyle.Compact
@@ -80,12 +85,12 @@ proc podGetErrorMessage*(errorKind: PodErrorKind, args: varargs[string]): string
 
 template fatal*(errorKind: PodErrorKind, args: varargs[string]) =
   var message = podGetErrorMessage(errorKind, args)
-  debug.fatal(message)
+  pxd.debug.fatal(message)
 
 
 template fatal*(p: var PodReader, errorKind: PodErrorKind, args: varargs[string]) =
   var message = podGetErrorMessage(errorKind, args) & " (" & $p.charIndex & ")"
-  debug.fatal(message)
+  pxd.debug.fatal(message)
 
 
 #------------------------------------------------------------------------------------------
@@ -389,28 +394,28 @@ proc parseTokenObject*(p: var PodReader) =
 
 proc eatObjBegin*(p: var PodReader) =
   if p.peek() notin ObjectBeginDelimeters:
-    debug.fatal(debug_tag, "no object begining")
+    pxd.debug.fatal(debug_tag, "no object begining")
   else:
     p.skip()
 
 
 proc eatArrayBegin*(p: var PodReader) =
   if p.peek() notin ArrayBeginDelimeter:
-    debug.fatal(debug_tag,"no array begining")
+    pxd.debug.fatal(debug_tag,"no array begining")
   else:
     p.skip()
 
 
 proc eatArrayEnd*(p: var PodReader) =
   if p.peek() notin ArrayEndDelimeter:
-    debug.fatal(debug_tag,"no array ending")
+    pxd.debug.fatal(debug_tag,"no array ending")
   else:
     p.skip()
 
 
 proc eatObjEnd*(p: var PodReader) =
   if p.peek() notin ObjectEndDelimeters:
-    debug.fatal(debug_tag,"no object ending")
+    pxd.debug.fatal(debug_tag,"no object ending")
   else:
     p.skip()
 
@@ -1308,7 +1313,7 @@ proc fromPodStringHook*(p: var PodReader, pod: var Pod) =
       try:
         pod = initPod(parseFloat(p.token))
       except ValueError:
-        debug.fatal(debug_tag,"invalid digit value")
+        pxd.debug.fatal(debug_tag,"invalid digit value")
 
   proc parseTableKey(p: var PodReader) =
     p.skipWhitespace()
@@ -1338,7 +1343,7 @@ proc fromPodStringHook*(p: var PodReader, pod: var Pod) =
         of ArrayEndDelimeter:
           break
         else:
-          debug.fatal(debug_tag,"invalid table assignment")
+          pxd.debug.fatal(debug_tag,"invalid table assignment")
     p.skip()
 
   proc parseArray(p: var PodReader, pod: var Pod) =
@@ -1388,7 +1393,7 @@ proc fromPodStringHook*(p: var PodReader, pod: var Pod) =
           p.skipWhitespace()
         of ObjectEndDelimeters:
           if assigns == 0 and p.token.len > 0:
-            debug.fatal(debug_tag,"key without value")
+            pxd.debug.fatal(debug_tag,"key without value")
           break
         of ArraySeparator:
           p.skip()
@@ -1418,14 +1423,14 @@ proc fromPodStringHook*(p: var PodReader, pod: var Pod) =
           p.skip(5)
           break
         else:
-          debug.fatal(debug_tag,"wrong boolean")
+          pxd.debug.fatal(debug_tag,"wrong boolean")
       of 't':
         if p.peek(3) == 'e':
           pod = initPod(true)
           p.skip(4)
           break
         else:
-          debug.fatal(debug_tag,"wrong boolean")
+          pxd.debug.fatal(debug_tag,"wrong boolean")
       of 'o':
         if p.peek(1) == 'n':
           pod = initPod(true)
@@ -1436,16 +1441,16 @@ proc fromPodStringHook*(p: var PodReader, pod: var Pod) =
           p.skip(3)
           break
         else:
-          debug.fatal(debug_tag,"wrong boolean")
+          pxd.debug.fatal(debug_tag,"wrong boolean")
       of 'n':
         if p.peek(3) == 'l':
           pod = initPod(nil)
           p.skip(4)
           break
         else:
-          debug.fatal(debug_tag,"wrong null")
+          pxd.debug.fatal(debug_tag,"wrong null")
       else:
-          debug.fatal("no value")
+          pxd.debug.fatal("no value")
           break
     p.skip()
   p.skipWhitespace()
@@ -1884,18 +1889,18 @@ proc fromPodStringHook*[T: SomeFloat](p: var PodReader, result: var T) =
   try:
     result = (T)parseFloat(p.token)
   except ValueError:
-    debug.fatal("not a float")
+    pxd.debug.fatal("not a float")
   p.skipWhiteSpace()
 
 
 proc fromPodStringHook*(p: var PodReader, result: var string) =
   p.skipWhiteSpace()
   if not p.match(StringDelimeters):
-    debug.fatal(debug_tag,"NOT A STRING")
+    pxd.debug.fatal(debug_tag,"NOT A STRING")
   p.parseTokenString()
   result = p.token
   if not p.match(StringDelimeters):
-    debug.fatal(debug_tag,"STRING IS NOT CLOSED")
+    pxd.debug.fatal(debug_tag,"STRING IS NOT CLOSED")
   p.skipWhiteSpace()
 
 
@@ -1917,13 +1922,13 @@ proc fromPodStringHook[T: object](p: var PodReader, result: var T) =
               else:
                 echo fname
                 var t = $typeof(fvalue)
-                debug.fatal(&"can't parse object of type: {t}")
+                pxd.debug.fatal(&"can't parse object of type: {t}")
             of ObjectBeginDelimeters:
               when compiles(fromPodStringHook(p, fvalue)):
                 fromPodStringHook(p, fvalue)
               else:
                 var t = $typeof(fvalue)
-                debug.fatal(&"can't parse object of type: {t}")
+                pxd.debug.fatal(&"can't parse object of type: {t}")
             else:
               break
           break

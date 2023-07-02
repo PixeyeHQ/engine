@@ -1,5 +1,5 @@
 import std/tables
-import px_engine/pxd/api
+import px_engine/pxd/definition/api
 
 
 type Ent*         = distinct u64

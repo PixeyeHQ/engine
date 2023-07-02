@@ -2,10 +2,11 @@ import std/hashes
 import std/macros
 import std/strutils
 import std/tables
-import px_engine/pxd/api as pxd_api except ents
-import px_engine/pxd/data/m_mem_pool
-import px_engine/pxd/data/m_obj_context
-import px_engine/pxd/m_utils_collections
+import px_engine/tools/m_utils_collections
+import px_engine/tools/m_utils_sorting
+import px_engine/pxd/definition/api as pxd_api except ents
+import px_engine/pxd/data/data_mem_pool
+import px_engine/pxd/data/data_object_context
 import px_engine/pxd/m_key
 import px_engine/pxd/m_debug
 import ecs_d
@@ -73,7 +74,7 @@ proc init(io: var EcsIO) =
     entityComps[] = newSeqOfCap[CId](4)
 
 var io: EcsIO; init(io)
-
+let debug = pxd.debug
 
 #------------------------------------------------------------------------------------------
 # @api ecs handles
@@ -111,7 +112,7 @@ proc getRegistry*(api;): Registry =
   var exist = io.regs.has("default")
   result = api.getRegistry("default")
   if not exist:
-    debug.warn("[ECS] Lazy registry initialization, all entities belong to default registry.")
+    pxd.debug.warn("[ECS] Lazy registry initialization, all entities belong to default registry.")
     result.setEntityRange(0, ECS_ENTITY_MAX)
     pxd.ecs.pushRegistry(result)
 
@@ -161,7 +162,7 @@ proc alive*(self: EId): bool {.inline.} =
 proc entity*(api; reg: Registry): Ent {.inline.} =
   ## Register new entity.
   # This is a dynamic list of alive and destroyed entities.
-  debug.assert:(reg.entityRange.free>0, "ECS", "No free indices available")
+  pxd.debug.assert:(reg.entityRange.free>0, "ECS", "No free indices available")
   let erange = reg.entityRange.addr
   dec erange.free
   let id      = erange.next
@@ -210,7 +211,7 @@ proc dropGroups(private; eid: EcsInt) {.inline.} =
 
 
 proc drop*(api; self: Ent|EId) =
-  debug.assert:(self.alive, "ECS", "Entity is already destroyed.")
+  pxd.debug.assert:(self.alive, "ECS", "Entity is already destroyed.")
   private.dropGroups(self.id)
   private.recycle(self.id)
 
@@ -929,7 +930,8 @@ proc count*(system: System): int =
 
 proc sort*(system: System, cmp: EntityComparer) {.inline.} =
   let ents = system.group.ents.addr
-  sort(ents.packed, ents.count, cmp)
+  let p = ents.packed.addr
+  mergeSort(ents.packed, ents.count, cmp)
 
 
 iterator entities*(system: System): EId {.inline.} =

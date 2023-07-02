@@ -1,29 +1,26 @@
 import px_engine/vendor/gl
 import px_engine/vendor/stb_image
-import px_engine/m_io
-import px_engine/Px
-import px_engine/pxd/api
-import px_engine/p2d/api
+import px_engine/pxd/definition/api
 import px_engine/pxd/m_math
-import px_engine/entities/c_camera
-import px_engine/entities/c_transform
+import px_engine/pxd/m_io
 import renderer_gl_p2d
 import renderer_gl
 
 
+let io = pxd.io
 #------------------------------------------------------------------------------------------
 # @api render
 #------------------------------------------------------------------------------------------
-proc renderState() =
+proc renderState*(api: EngineAPI) =
   p2d.executeRender()
 
 
-template draw*(api: RenderAPI, code: untyped) = 
+template draw*(api: PxdAPI, code: untyped) = 
   block:
     code
 
 
-proc clear*(api: RenderAPI, r,g,b: float) =
+proc clear*(api: RenderAPI, r,g,b: f64) =
   glClearColor(r,g,b,1.0)
   glClear(GL_COLOR_BUFFER_BIT or GL_DEPTH_BUFFER_BIT)
   glClearDepth(1.0)
@@ -37,17 +34,9 @@ proc mode*(api: RenderAPI, _: SCREEN_MODE) =
     result = matrixIdentity()
     result = multiply(result, translation)
     result.invert()
-  renderState()
-  let sw = io.app.settings.window.w[].float
-  let sh = io.app.settings.window.h[].float
-  let w  = io.app.screen.w.float
-  let h  = io.app.screen.h.float
-  # let rw = clamp(w / sw, 0, 1)
-  # let rh = clamp(h / sh, 0, 1)
-  # if rh < rw:
-  #   io.app.screen.ratio = rh
-  # else:
-  #   io.app.screen.ratio = rw
+  pxd.engine.renderState()
+  let w  = io.app.screen.w.f64
+  let h  = io.app.screen.h.f64
   var m = getScreenMatrix()
   pxd.render.frame.umvp.identity()
   pxd.render.frame.umvp.ortho(0,w,0,h,0.01,1000)
@@ -65,8 +54,8 @@ proc viewport*(x: int, y: int) =
   let viewportx = i32(x / 2 - aspectWidth.f32 / 2)
   let viewporty = i32(y / 2 - aspectHeight.f32 / 2)
   glViewport(viewportx,viewporty,aspectWidth.int,aspectHeight.int)
-  io.app.viewport.w = aspectWidth - viewportx.float
-  io.app.viewport.h = aspectHeight - viewporty.float
+  io.app.viewport.w = aspectWidth - viewportx.f64
+  io.app.viewport.h = aspectHeight - viewporty.f64
   #   of vp_fit:
   #     let aspectRatio  = global.getAspectRatio()
   #     var aspectWidth  = x.f32
@@ -87,30 +76,7 @@ proc viewport*(x: int, y: int) =
   #     rdViewport(0,0,aspectWidth.int,aspectHeight.int)
 
 
-proc mode*(api: RenderAPI, camera: Camera) =
-  renderState()
-  pxd.render.frame.umvp.identity()
-  viewport(io.app.screen.w, io.app.screen.h)
-  let ccamera    = camera.ccamera
-  let ctransform = camera.ctransform
-  let translation = ctransform.getPositionMatrix()
-  let rotation    = ctransform.getRotationMatrix()
-  let aspect      = io.app.aspectRatio()
-  ccamera.matrixView = matrixIdentity()
-  ccamera.matrixView = multiply(ccamera.matrixView, rotation)
-  ccamera.matrixView = multiply(ccamera.matrixView, translation)
-  ccamera.matrixViewInversed = ccamera.matrixView.inverse()
-  pxd.render.frame.uview     = ccamera.matrixView 
-  let n = ccamera.planeNear
-  let f = ccamera.planeFar
-  if ccamera.projection == ProjectionKind.Perspective:
-    discard
-  else:
-    let h = ccamera.orthosize * ccamera.zoom
-    let w = h * aspect
-    pxd.render.frame.umvp.ortho(-w,w,-h,h,n,f)
-    pxd.render.frame.uproj = pxd.render.frame.umvp
-    pxd.render.frame.umvp = multiply(pxd.render.frame.umvp, ccamera.matrixViewInversed)
+
   
     #ccamera.matrixProj.ortho(-w,w,-h,h,n,f)
     #pxd.render.frame.umvp.ortho(-w,w,h,h,n,f)
@@ -130,8 +96,9 @@ proc mode*(api: RenderAPI, camera: Camera) =
     #   let viewporty = i32(y / 2 - aspectHeight.f32 / 2)
     #   rdViewport(viewportx,viewporty,aspectWidth.int,aspectHeight.int)
 
+
 proc depthTest*(api: RenderAPI, mode: static bool) =
-  renderState()
+  pxd.engine.renderState()
   when mode == true:
     glEnable(GL_DEPTH_TEST)
   else:

@@ -1,14 +1,15 @@
 import px_engine/vendor/gl
 import px_engine/vendor/stb_image
-import px_engine/px
-import px_engine/pxd/api
+import px_engine/pxd/definition/api
 import px_engine/pxd/m_platform
 import px_engine/pxd/m_debug
 import px_engine/pxd/m_vars
 import px_engine/pxd/m_math
-import px_engine/pxd/m_utils_collections
+import px_engine/tools/m_utils_collections
+import renderer_gl_d
 
-
+let debug = pxd.debug
+let io    = pxd.io
 #------------------------------------------------------------------------------------------
 # @api renderer define
 #------------------------------------------------------------------------------------------
@@ -106,16 +107,16 @@ proc reportGladLoadGl(api: DebugAPI, isGlLoaded: bool) =
     let glversion {.inject.} = cast[cstring](glGetString(GL_VERSION))
     let glvendor  {.inject.} = cast[cstring](glGetString(GL_VENDOR))
     let message = &"\n GPU: {glversion}\n {glvendor}"
-    io.vars.get("runtime.initMessage", string)[].add(message)
+    pxd.vars.get("runtime.initMessage", string)[].add(message)
   else:
-    debug.fatal("Renderer", "Can't initialize OpenGL!")
+    pxd.debug.fatal("Renderer", "Can't initialize OpenGL!")
 
 
 proc glInit() =
   type ProcAddress = proc(procname: cstring): proc() {.cdecl.} {.cdecl.}
   var glProc   = pxd.platform.initGl()
   let glResult = gladLoadGL(cast[ProcAddress](glProc))
-  debug.reportGladLoadGl(glResult)
+  pxd.debug.reportGladLoadGl(glResult)
 
 
 proc init*(api: RenderAPI) =

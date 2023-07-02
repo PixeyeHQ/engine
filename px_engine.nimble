@@ -1,9 +1,10 @@
 # Package
-version       = "1.2023.6.4"
+version       = "2023.7.3"
 author        = "Dmitry Igorevich Mitrofanov (@pixeye)"
 description   = "2d/3d Game engine"
 license       = "Zlib"
 srcDir        = "src"
+
 
 # Dependencies
 requires "nim      >= 1.0"
@@ -15,6 +16,17 @@ var debug = "debug"
 
 proc run(name, releaseMode="danger") =
   exec "nim cpp --mm:orc -d:stacktrace:off -d:useMalloc -d:" & releaseMode & " -o=bin/examples/ -r examples/" & name & ".nim"
+
+
+task ex_camera, ex:
+  run "ex_camera"
+task ex_camera_d, ex:
+  run "ex_camera", debug
+
+task ex_interaction, ex:
+  run "ex_interaction"
+task ex_interaction_d, ex:
+  run "ex_interaction", debug
 
 task ex_pods, ex:
   run "ex_pods"
@@ -50,3 +62,8 @@ task ex_test, ex:
   run "ex_test"
 task ex_test_d, ex:
   run "ex_test", debug
+
+task ex_physics2d, ex:
+  run "ex_physics2d"
+task ex_physics2d_d, ex:
+  run "ex_physics2d", debug

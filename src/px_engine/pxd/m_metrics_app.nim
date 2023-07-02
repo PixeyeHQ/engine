@@ -1,14 +1,14 @@
 import std/strformat
-import px_engine/pxd/api
+import px_engine/pxd/definition/api
 
 
-type AppMetricsState* = object
+type AppMetricsState = object
   frames*:      int
   ticks*:       int
   drawcalls*:   int
 
 
-type AppMetrics* = object
+type AppMetrics = object
   fps*:         int = 60
   ups*:         int
   drawcalls*:   int

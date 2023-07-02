@@ -7,9 +7,6 @@ in vec2 vtexcoord;
 uniform sampler2D utexture;
 const float cutoff = 0.005;
 void main(){
- 
   color  = texture(utexture, vtexcoord) * vcolor;
   if(color.a - cutoff < 0) discard;
 }
-
-

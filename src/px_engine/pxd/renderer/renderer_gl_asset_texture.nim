@@ -1,16 +1,19 @@
 import px_engine/vendor/stb_image
 import px_engine/vendor/gl
-import px_engine/pxd/api
-import px_engine/pxd/data/m_mem_pool
-import px_engine/pxd/data/m_mem
+import px_engine/pxd/definition/api
+import px_engine/pxd/data/data_mem_pool
+import px_engine/pxd/data/data_mem
 import px_engine/pxd/m_debug
-import px_engine/assets/asset_image
-import renderer_d
+import px_engine/pxd/res/asset_image
+import renderer_gl_asset_texture_d
+export renderer_gl_asset_texture_d
 
 
-GEN_MEM_POOL(Texture2D_Obj, Texture2D)
+GEN_MEM_POOL(Texture2D_Object, Texture2D)
 
 
+let debug  = pxd.debug
+let engine = pxd.engine
 #------------------------------------------------------------------------------------------
 # @api texture2d load
 #------------------------------------------------------------------------------------------
@@ -19,7 +22,7 @@ var textureWhite: Texture2D
 
 proc load*(api: EngineAPI, path: string, pixelPerfect: bool, typeof: typedesc[Texture2D]): Texture2D =
   let image = engine.load(path, Image)
-  result    = make(Texture2D_Obj)
+  result    = make(Texture2D_Object)
   var w     = image.get.width
   var h     = image.get.height
   var format: GLenum
@@ -29,7 +32,7 @@ proc load*(api: EngineAPI, path: string, pixelPerfect: bool, typeof: typedesc[Te
     of 4:
       format = GL_RGBA
     else:
-      debug.warn("[ASSET] Wrong texture format.")
+      pxd.debug.warn("[ASSET] Wrong texture format.")
   var FILTER = if pixelPerfect: GL_NEAREST else: GL_LINEAR
   glGenTextures(1, result.get.id.addr)
   glBindTexture(GL_TEXTURE_2D, result.get.id)
@@ -50,10 +53,10 @@ proc unload*(api: EngineAPI, texture: Texture2D) =
 
 proc genTextureWhite(): Texture2D =
   const GL_RGB_ID = GL_RGBA8.GLint
-  var texture = make(Texture2D_Obj)
+  var texture = make(Texture2D_Object)
   var color = 0xffffffff
-  var w = 1.int32
-  var h = 1.int32
+  var w = 1.i32
+  var h = 1.i32
   glCreateTextures(GL_TEXTURE_2D, 1, texture.get.id.addr)
   glTextureParameteri(texture.get.id, GL_TEXTURE_WRAP_S,     GL_CLAMP_TO_EDGE.Glint)
   glTextureParameteri(texture.get.id, GL_TEXTURE_WRAP_T,     GL_CLAMP_TO_EDGE.Glint)

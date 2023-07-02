@@ -1,15 +1,13 @@
 import px_engine/vendor/gl
-import px_engine/m_assets
-import px_engine/pxd/api
-import px_engine/p2d/api
+import px_engine/pxd/definition/api
 import px_engine/pxd/m_debug
 import px_engine/pxd/m_math
 import px_engine/pxd/m_metrics_app
-import px_engine/assets/asset_font
-import px_engine/assets/asset_texture
-import px_engine/pxd/data/m_mem_pool
+import px_engine/pxd/m_res
+import px_engine/pxd/data/data_mem_pool
 import renderer_d
 import renderer_gl
+
 
 type Render2DKind* = enum
   R2D_NONE,
@@ -21,6 +19,7 @@ type Render2DKind* = enum
 type DynamicRenderer2D_Obj = object
   renderer*:    Renderer2D
   texWhite*:    Texture2D
+  texWhiteId*:  u32
   renderKind*:  Render2D_Kind
   fontShader*:  Shader
   font*:        Font
@@ -33,8 +32,6 @@ type DynamicRenderer2D* = distinct Handle
 
 GEN_MEM_POOL(Renderer2D_Obj, Renderer2D)
 GEN_MEM_POOL(DynamicRenderer2D_Obj, DynamicRenderer2D)
-
-
 
 
 #------------------------------------------------------------------------------------------
@@ -91,6 +88,12 @@ proc tryFlush*(self: Renderer2D) =
        self.flush()
 
 
+proc tryFlush*(self: Renderer2D, nextVerticesCount: int) =
+  if self.batch.indexCount >= R2D_QUADS_INDICES_BATCH or
+     self.batch.nextVertexIndex >= R2D_QUADS_VERTICES_BATCH - nextVerticesCount:
+       self.flush()
+
+
 proc setShader*(self: Renderer2D, shader: Shader) =
   self.flush()
   self.defaultShader = shader
@@ -118,19 +121,19 @@ template useShader*(self: Renderer2D, code: untyped) =
 
 
 {.push inline.}
-proc uniform*(self: Renderer2D, name: string, value: int32) =
+proc uniform*(self: Renderer2D, name: string, value: i32) =
   self.shader.uniform(name, value)
 
 
-proc uniform*(self: Renderer2D, name: string, count: int, value: ptr int32) =
+proc uniform*(self: Renderer2D, name: string, count: int, value: ptr i32) =
   self.shader.uniform(name, count, value)
 
 
-proc uniform*(self: Renderer2D, name: string, value: float32) =
+proc uniform*(self: Renderer2D, name: string, value: f32) =
   self.shader.uniform(name, value)
 
 
-proc uniform*(self: Renderer2D, name: string, x,y,z,w: float32) =
+proc uniform*(self: Renderer2D, name: string, x,y,z,w: f32) =
   self.shader.uniform(name, x,y,z,w)
 
 
@@ -146,15 +149,16 @@ proc uniform*(self: Renderer2D, name: string, matrix: var Matrix) =
 #------------------------------------------------------------------------------------------
 # @api r2d, draw commands
 #------------------------------------------------------------------------------------------
-template setType*(self: DynamicRenderer2D, kind: Render2D_Kind) {.dirty.} =
-  if self.renderKind != kind:
-    self.renderer.flush()
-    self.renderKind = kind
+template setTypeRenderer2D*(kind: Render2D_Kind) =
+  if dynamicRender.renderKind != kind:
+    dynamicRender.renderer.flush()
+    dynamicRender.renderKind = kind
 
 
-template draw*(self: Renderer2D, pindexCount: static i32, code: untyped) {.dirty.} =
+template draw*(self: Renderer2D, pindexCount: static int, pvertexCount: int, kind: Render2D_Kind, code: untyped) {.dirty.} =
   let renderer = self
-  renderer.tryFlush()
+  setTypeRenderer2D(kind)
+  renderer.tryFlush(pvertexCount)
   let batch         = renderer.batch.addr
   let buffer        = batch.vertices.addr
   var nvertexColor: Color
@@ -173,11 +177,33 @@ template texture*(id: u32) {.dirty.} =
     renderer.textureId = id
 
 
+template vertex*(pp: Vec3, pu: f32 = 0f, pv: f32 = 0f)  =
+  var v = buffer[batch.nextVertexIndex].addr
+  v.color      = nvertexColor
+  v.position.x = pp.x
+  v.position.y = pp.y
+  v.position.z = pp.z
+  v.texcoord.u = pu
+  v.texcoord.v = pv
+  inc batch.nextVertexIndex
+
+
 template vertex*(px,py,pz: f32, pu: f32 = 0f, pv: f32 = 0f)  =
   var v = buffer[batch.nextVertexIndex].addr
   v.color      = nvertexColor
   v.position.x = px
   v.position.y = py
+  v.position.z = pz
+  v.texcoord.u = pu
+  v.texcoord.v = pv
+  inc batch.nextVertexIndex
+
+
+template vertexr*(px,py,pz: f32, ox, oy: f32, cos: f32, sin: f32, pu: f32 = 0f, pv: f32 = 0f)  =
+  let v = buffer[batch.nextVertexIndex].addr
+  v.color      = nvertexColor
+  v.position.x = (px - ox) * cos  - (py - oy) * -sin + ox
+  v.position.y = (px - ox) * -sin + (py - oy) * cos + oy
   v.position.z = pz
   v.texcoord.u = pu
   v.texcoord.v = pv
@@ -192,6 +218,13 @@ template vertex*(px,py,pz: f32, ptexcoord: Vec2)  =
   v.position.z = pz
   v.texcoord   = ptexcoord
   inc batch.nextVertexIndex
+
+
+proc getLineRadius*(p1, p2: Vec3, thickness: f32): Vec {.inline.} =
+  let direction    = p2 - p1
+  let normalVector = direction.normalized()
+  let radius       = thickness / 2
+  result = vec(-radius * normalVector.y, radius * normalVector.x)
 
 
 #------------------------------------------------------------------------------------------
@@ -220,49 +253,10 @@ template addQuadIndexBuffer(self: ptr Renderer2D_Obj) {.dirty.} =
   r.ib = internal.addIndexBuffer(indices.addr, indices.len)
 
 
-# proc initShapeRenderer() =
-#   let r = shapeRender_h.get.addr
-#   r.batch.vertices = newSeq[Vertex2d](R2D_QUADS_VERTICES_BATCH)
-#   r.shader         = pxd.res.get("./assets/shaders/r2d.shader").shader
-#   r.textureId      = pxd.res.getTextureWhite().get.id
-#   r.defaultShader  = r.shader
-#   r.va             = internal.addVertexArray()
-#   r.vb             = internal.addVertexBuffer(Vertex2d, R2D_QUADS_VERTICES_BATCH)
-#   r.addVertexLayout()
-#   internal.stop(r.vb)
-#   internal.stop(r.va)
-
-
-# proc initSpriteRenderer() =
-#   let r = spriteRender_h.get.addr
-#   r.batch.vertices = newSeq[Vertex2d](R2D_QUADS_VERTICES_BATCH)
-#   r.shader         = pxd.res.get("./assets/shaders/r2d.shader").shader
-#   r.textureId      = pxd.res.getTextureWhite().get.id
-#   r.defaultShader  = r.shader
-#   r.va = internal.addVertexArray()
-#   r.vb = internal.addVertexBuffer(Vertex2d, R2D_QUADS_VERTICES_BATCH)
-#   r.addVertexLayout()
-#   r.addQuadIndexBuffer()
-#   internal.stop(r.vb)
-#   internal.stop(r.va)
-
-
-# proc initTextRenderer() =
-#   let r = textRender_h.get.addr
-#   r.batch.vertices = newSeq[Vertex2d](R2D_QUADS_VERTICES_BATCH)
-#   r.shader         = pxd.res.get("./assets/shaders/r2d.shader").shader
-#   r.defaultShader  = r.shader
-#   r.va = internal.addVertexArray()
-#   r.vb = internal.addVertexBuffer(Vertex2d, R2D_QUADS_VERTICES_BATCH)
-#   r.addVertexLayout()
-#   r.addQuadIndexBuffer()
-#   internal.stop(r.vb)
-#   internal.stop(r.va)
-
-
 proc initDynamicRenderer() =
   let dr        = dynamicRender.get.addr
   dr.texWhite   = pxd.res.getTextureWhite()
+  dr.texWhiteId = dr.texWhite.get.id
   dr.renderer   = make(Renderer2D_OBJ)
   dr.fontShader = pxd.res.get("./assets/shaders/pxd_font.shader").shader
   let r = dr.renderer.get.addr
@@ -279,28 +273,11 @@ proc initDynamicRenderer() =
 
 
 proc initRenderer*(api: P2d_API) =
-
   initDynamicRenderer()
-
-  # initShapeRenderer()
-  # initSpriteRenderer()
-  # initTextRenderer()
 
 
 proc render2D*(api: Engine_API): DynamicRenderer2D =
   dynamicRender
-
-
-# proc shapeRender*(api: P2d_API): Renderer2D {.inline.} =
-#   shapeRender_h
-
-
-# proc spriteRender*(api: P2d_API): Renderer2D {.inline.} =
-#   spriteRender_h
-
-
-# proc textRender*(api: P2d_API): Renderer2D {.inline.} =
-#   textRender_h
 
 
 proc executeRender*(api: P2d_API) =

@@ -3,12 +3,12 @@ import std/strformat
 import std/strutils
 import std/tables
 import px_engine/vendor/gl
-import px_engine/m_io
-import px_engine/pxd/api
+import px_engine/pxd/definition/api
 import px_engine/pxd/m_debug
 import px_engine/pxd/m_math
-import px_engine/pxd/data/m_mem_pool
-import renderer_d
+import px_engine/pxd/data/data_mem_pool
+import renderer_gl_asset_shader_d
+export renderer_gl_asset_shader_d
 
 
 const defaultVert: string = """#version 330 core
@@ -26,9 +26,11 @@ const defaultFrag: string = """
   }"""
 
 
-GEN_MEM_POOL(ShaderObj, Shader)
+GEN_MEM_POOL(ShaderObject, Shader)
 
 
+let debug = pxd.debug
+let io    = pxd.io
 #------------------------------------------------------------------------------------------
 # @api shader logger
 #------------------------------------------------------------------------------------------
@@ -52,25 +54,25 @@ proc reportShaderCompilation*(api: DebugAPI, vert, frag: GLuint) =
   var report: tuple[success: bool, error: string] 
   report = api.reportShaderCompilation(vert, GL_COMPILE_STATUS)
   if not report.success:
-      debug.error("[SHADER]: Vertex shader compilation failed: " & report.error)
+      pxd.debug.error("[SHADER]: Vertex shader compilation failed: " & report.error)
   report = api.reportShaderCompilation(frag, GL_COMPILE_STATUS)
   if not report.success:
-      debug.error("[SHADER]: Fragment shader compilation failed: " & report.error)
+      pxd.debug.error("[SHADER]: Fragment shader compilation failed: " & report.error)
 
 
 proc reportShaderCompilation(api: DebugAPI, shader: GLuint) =
   var report: tuple[success: bool, error: string]
   report = api.reportShaderCompilation(shader, GL_LINK_STATUS)
   if not report.success:
-      debug.error("[SHADER]: Shader program linking failed: " & report.error)
+      pxd.debug.error("[SHADER]: Shader program linking failed: " & report.error)
 
 
 proc report(api: DebugAPI, error: ShaderError, args: varargs[string]) =
   case error:
     of RE_SHADER_NO_FRAG_FILE:
-      debug.warn(&"[ASSET]: The path {args[0]} doesn't exist, adding a default fragment shader.")
+      pxd.debug.warn(&"[ASSET]: The path {args[0]} doesn't exist, adding a default fragment shader.")
     of RE_SHADER_NO_VERT_FILE:
-      debug.warn(&"[ASSET]: The path {args[0]} doesn't exist, adding a default vertex shader.")
+      pxd.debug.warn(&"[ASSET]: The path {args[0]} doesn't exist, adding a default vertex shader.")
 
 
 #------------------------------------------------------------------------------------------
@@ -91,23 +93,23 @@ proc load*(api: EngineAPI, pathFull: string, typeof: typedesc[Shader]): Shader =
   var path = default(string)
   path = assetPath & ".vert"
   if not fileExists(path):
-    debug.report(RE_SHADER_NO_VERT_FILE, path)
+    pxd.debug.report(RE_SHADER_NO_VERT_FILE, path)
   else: sourceVert = readFile(path)
   path = assetPath & ".frag"
   if not fileExists(path):
-    debug.report(RE_SHADER_NO_FRAG_FILE, path)
+    pxd.debug.report(RE_SHADER_NO_FRAG_FILE, path)
   else: sourceFrag = readFile(path)
   var vertex = compileShader(GL_VERTEX_SHADER, sourceVert)
   var frag   = compileShader(GL_FRAGMENT_SHADER, sourceFrag)
-  debug.reportShaderCompilation(vertex, frag)
+  pxd.debug.reportShaderCompilation(vertex, frag)
   var shader = glCreateProgram()
   glAttachShader(shader, vertex)
   glAttachShader(shader, frag)
   glLinkProgram(shader)
-  debug.reportShaderCompilation(shader)
+  pxd.debug.reportShaderCompilation(shader)
   glDeleteShader(vertex)
   glDeleteShader(frag)
-  result = make(ShaderObj)
+  result = make(ShaderObject)
   result.program = shader
 
 
@@ -130,13 +132,13 @@ proc stop*(api: RenderAPI_Internal, shader: Shader) =
 #------------------------------------------------------------------------------------------
 # @api uniforms
 #------------------------------------------------------------------------------------------
-var uniformNames: array[64, TableRef[string, int32]]
+var uniformNames: array[64, TableRef[string, i32]]
 for index in 0..<64:
-  uniformNames[index] = newTable[string, int32]()
+  uniformNames[index] = newTable[string, i32]()
 
 
-proc getUniformLocation(shader: Shader, name: string): int32 {.inline.} =
-  let shaderId = shader.get.program.uint32
+proc getUniformLocation(shader: Shader, name: string): i32 {.inline.} =
+  let shaderId = shader.get.program.u32
   let table    = uniformNames[shaderId]
   if table.hasKey(name):
     result = table[name]
@@ -145,23 +147,23 @@ proc getUniformLocation(shader: Shader, name: string): int32 {.inline.} =
     table[name] = result
 
 
-proc getUniformLocation*(api: RenderAPI_Internal, shader: Shader, name: string): int32 {.inline.} =
+proc getUniformLocation*(api: RenderAPI_Internal, shader: Shader, name: string): i32 {.inline.} =
   getUniformLocation(shader, name)
 
 
-proc uniform*(shader: Shader, name: string, value: int32) =
+proc uniform*(shader: Shader, name: string, value: i32) =
   glUniform1i(getUniformLocation(shader,name),value)
 
 
-proc uniform*(shader: Shader, name: string, count: int, value: ptr int32) =
+proc uniform*(shader: Shader, name: string, count: int, value: ptr i32) =
   glUniform1iv(getUniformLocation(shader,name),int32(count), cast[ptr GLint](value))
 
 
-proc uniform*(shader: Shader, name: string, value: float32) =
+proc uniform*(shader: Shader, name: string, value: f32) =
   glUniform1f(getUniformLocation(shader,name),value)
 
 
-proc uniform*(shader: Shader, name: string, x,y,z,w: float32) =
+proc uniform*(shader: Shader, name: string, x,y,z,w: f32) =
   glUniform4f(getUniformLocation(shader,name),x,y,z,w)
 
 
