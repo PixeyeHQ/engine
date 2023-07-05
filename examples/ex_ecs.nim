@@ -70,10 +70,10 @@ let sys = pxd.ecs.builder.system(reg)
 
 
 benchmark ECS_ENTITY_MAX, 1:
-  let e = pxd.ecs.entity(reg)
   profile "update system":
-    e.get ctransform_t
-    e.get cobject_t
+    for e in sys.entities():
+      e.get ctransform_t
+      e.get cobject_t
 
 
 pxd.ecs.update() # normally ecs update works internally via pxd.run
@@ -83,21 +83,21 @@ pxd.debug.shutdown()
   [*] 16k
   create: 0ms
   reset:  0.06ms
-  update: 0.015ms
+  update: 0.00350ms
   [*] 65k
   create: 1.1ms
   reset:  0.25ms
-  update: 0.062ms
+  update: 0.01420ms
   [*] 262k
   create: 4.7ms
   reset:  1.2ms
-  update: 0.25ms
+  update: 0.057ms
   [*] 1mln
   create: 18.4ms
   reset:  5.8ms
-  update: 0.95ms
+  update: 0.21ms
   [*] 2mln
   create: 36.5ms
   reset:  11ms
-  update: 1.9ms
+  update: 0.67ms
 ]#
