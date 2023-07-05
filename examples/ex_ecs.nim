@@ -50,6 +50,9 @@ proc with*(builder: var EntityBuilder, ctype: tdamaged_t, amount: int): var Enti
 
 
 let reg  = pxd.ecs.getRegistry()
+let sys = pxd.ecs.builder.system(reg)
+                     .with(CTransform,CObject)
+                     .build()
 
 
 benchmark ECS_ENTITY_MAX, 1:
@@ -58,22 +61,15 @@ benchmark ECS_ENTITY_MAX, 1:
     e.get ctransform_t
     e.get cobject_t
 
-
 benchmark 1, 1:
-  profile "reset all":
-    pxd.ecs.reset(reg)
-
-
-let sys = pxd.ecs.builder.system(reg)
-                     .with(CTransform,CObject,CPawn)
-                     .build()
-
-
-benchmark ECS_ENTITY_MAX, 1:
   profile "update system":
     for e in sys.entities():
       e.get ctransform_t
       e.get cobject_t
+
+benchmark 1, 1:
+  profile "reset all":
+    pxd.ecs.reset(reg)
 
 
 pxd.ecs.update() # normally ecs update works internally via pxd.run
@@ -83,21 +79,21 @@ pxd.debug.shutdown()
   [*] 16k
   create: 0ms
   reset:  0.06ms
-  update: 0.00350ms
+  update: 0.02130 ms
   [*] 65k
   create: 1.1ms
   reset:  0.25ms
-  update: 0.01420ms
+  update: 0.08540 ms
   [*] 262k
   create: 4.7ms
   reset:  1.2ms
-  update: 0.057ms
+  update: 0.34760ms
   [*] 1mln
   create: 18.4ms
   reset:  5.8ms
-  update: 0.21ms
+  update: 1.32820ms
   [*] 2mln
   create: 36.5ms
   reset:  11ms
-  update: 0.67ms
+  update: 2.67760ms
 ]#
