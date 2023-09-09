@@ -106,20 +106,37 @@ proc load*(api: EngineAPI, path: string, typeof: typedesc[SpriteAtlas]): SpriteA
   let texture     = engine.load(io.path(atlasPod["meta"]["image"].str), true, Texture2D)
   let texture_w   = texture.get.width
   result          = make(SpriteAtlasObj)
-  for k,v in atlasPod["frames"].fields.mpairs:
-    var spriteParams = SpriteParams(
-      name:  k,
-      texId: texture.get.id,
-      sprx:  v["frame"]["x"].getFloat(),
-      spry:  v["frame"]["y"].getFloat(),
-      sprw:  v["frame"]["w"].getFloat(),
-      sprh:  v["frame"]["h"].getFloat(),
-      px:    1.0-v["pivot"]["x"].getFloat(),
-      py:    1.0-v["pivot"]["y"].getFloat(),
-      texw:  texture.get.width.f32,
-      texh:  texture.get.height.f32
-    )
-    result.get.sprite[k] = engine.load(spriteParams, Sprite)
+  var spriteParams: SpriteParams
+  if atlasPod["frames"].fields.contains("pivot"):
+    for k,v in atlasPod["frames"].fields.mpairs:
+      spriteParams = SpriteParams(
+        name:  k,
+        texId: texture.get.id,
+        sprx:  v["frame"]["x"].getFloat(),
+        spry:  v["frame"]["y"].getFloat(),
+        sprw:  v["frame"]["w"].getFloat(),
+        sprh:  v["frame"]["h"].getFloat(),
+        px:    1.0-v["pivot"]["x"].getFloat(),
+        py:    1.0-v["pivot"]["y"].getFloat(),
+        texw:  texture.get.width.f32,
+        texh:  texture.get.height.f32
+      )
+      result.get.sprite[k] = engine.load(spriteParams, Sprite)
+  elif not atlasPod["frames"].fields.contains("pivot"):
+      for k,v in atlasPod["frames"].fields.mpairs:
+        spriteParams = SpriteParams(
+          name:  k,
+          texId: texture.get.id,
+          sprx:  v["frame"]["x"].getFloat(),
+          spry:  v["frame"]["y"].getFloat(),
+          sprw:  v["frame"]["w"].getFloat(),
+          sprh:  v["frame"]["h"].getFloat(),
+          px:    1.0-0.5,
+          py:    1.0-0.5,
+          texw:  texture.get.width.f32,
+          texh:  texture.get.height.f32
+        )
+        result.get.sprite[k] = engine.load(spriteParams, Sprite)
   result.get.meta       = to(atlasPod["meta"], SpriteAtlasMeta)
   result.get.texAsset   = texture
 
