@@ -23,6 +23,7 @@ type
   IndexAPI*      = distinct API_Obj
   EcsAPI*        = distinct API_Obj
   CreateAPI*     = distinct API_Obj
+  GenerateAPI*   = distinct API_Obj
 const
   VARS_DONT_SAVE* = POD_DONT_SAVE
 var
@@ -43,6 +44,7 @@ var
   api_memory   = MemoryAPI(api_o)
   api_ecs      = EcsAPI(api_o)
   api_create   = CreateAPI(api_o)
+  api_gen      = GenerateAPI(api_o)
 var
   pxd* = PxdAPI(api_o) ## API: Core engine stuff
 proc debug*(self: PxdAPI): DebugAPI = api_debug
@@ -62,6 +64,6 @@ proc memory*(self: PxdAPI): MemoryAPI = api_memory
 proc private*(self: RenderAPI): RenderAPI_Private = api_render_private
 proc ecs*(self: PxdAPI): EcsAPI = api_ecs
 proc create*(self: PxdAPI): CreateAPI = api_create
-
+proc gen*(sefl: PxdAPI): GenerateAPI = api_gen
 
 
