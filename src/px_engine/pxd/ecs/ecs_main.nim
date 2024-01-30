@@ -376,6 +376,14 @@ proc trySort*(data: var EntsPack, cmp: EntityComparer) =
 #------------------------------------------------------------------------------------------
 # @api ecs entity groups
 #------------------------------------------------------------------------------------------
+proc updateEntities(api;) =
+  for reg in io.regs.table.values:
+    let min = reg.entityRange.min
+    let max = reg.entityRange.max
+    for index in min..max:
+      updateGroups(index)
+
+
 proc findGroup(reg: Registry, cmask: ComponentMask): EntityGroup =
   let mreg = reg.get.addr
   let h_all_incl = cmask.maskall.incl.hash
@@ -411,6 +419,7 @@ proc getGroup(reg: Registry, cmask: ComponentMask): EntityGroup =
     for cid in cmask.maskAny.excl:
       reg.cgroups.grow(cid.int):
         reg.cgroups[cid].add(result)
+    pxd.ecs.updateEntities()
 
 
 proc add(group: EntityGroup, eid: EcsInt) {.inline.} =
@@ -974,6 +983,10 @@ template genComponent*(api: EcsAPI; ctype: typed, initSize: static int = 1): unt
   gen_component_macro(ctype, initSize)
 
 
+template component*(api: GenerateAPI, ctype: typed, initSize: static int = 1): untyped =
+  gen_component_macro(ctype, initSize)
+
+
 #------------------------------------------------------------------------------------------
 # @api ecs system
 #------------------------------------------------------------------------------------------
@@ -1045,18 +1058,9 @@ template onChanged*(system: var EntityQuery, code: untyped): untyped =
 #------------------------------------------------------------------------------------------
 # @api ecs system builder
 #------------------------------------------------------------------------------------------
-proc updateEntities(api;) =
-  var flag {.global.} : bool = false
-  if flag: return else: flag = true
-  for reg in io.regs.table.values:
-    let min = reg.entityRange.min
-    let max = reg.entityRange.max
-    for index in min..max:
-      updateGroups(index)
-
-
 proc update*(api;) =
-  api.updateEntities()
+  var flag {.global.} = false
+  if not flag : api.updateEntities(); flag = true
   for reg in io.regs.table.values:
     for group in reg.entityGroups.items:
       group.changed = false
