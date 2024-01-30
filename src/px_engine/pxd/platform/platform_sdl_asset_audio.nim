@@ -1,27 +1,50 @@
-import px_engine/vendor/sdl_mixer as mix
-import px_engine/pxd/definition/api
-import px_engine/pxd/data/data_mem_pool
-import platform_sdl_audio_d
-export platform_sdl_audio_d
+#[
+  Not production ready, just a simple wrapper from sdl mixer to mark audio presense.
+  This module will be expanded in future on demand of upcoming game projects.
+]#
+import std/strformat
+import ../api
+import ../m_memory
+import ../m_debug
+import ../../vendors/sdl_mixer as mix
+
+type Sound_Obj* = object
+  data*:    pointer
+  channel*: cint
+type Sound* = distinct Handle
+
+type Music_Obj* = object
+  data*: pointer
+type Music* = distinct Handle
 
 
-type Music = platform_sdl_audio_d.Music
+proc initAudio*(api: EngineAPI) =
+  const sampleFrequency = 22050
+  const channels        = 2 # 1-mono, 2-stereo
+  const chunkSize       = 1024
+  var result = mix.openAudio(sampleFrequency, mix.DEFAULT_FORMAT, channels, chunkSize)
+  if result != 0:
+    pxd.debug.fatal("AUDIO: Failed to open audio: {mix.getError()}")
 
 
-GEN_MEM_POOL(SoundObj, Sound)
-GEN_MEM_POOL(MusicObj, Music)
+proc shutdownAudio*(api: EngineAPI) =
+  mix.quit()
+
+
+pxd.memory.genPoolTyped(Sound, SoundObj)
+pxd.memory.genPoolTyped(Music, MusicObj)
 
 #------------------------------------------------------------------------------------------
 # @api audio loader
 #------------------------------------------------------------------------------------------
-proc load*(api: EngineAPI, path: string, typeof: typedesc[Sound]): Sound =
-  var asset = make(SoundObj)
+proc load*(api: AssetAPI, path: string, typeof: typedesc[Sound]): Sound =
+  var asset = make(Sound)
   asset.get.data = mix.loadWAV(path)
   result = asset
 
 
-proc load*(api: EngineAPI, path: string, typeof: typedesc[Music]): Music =
-  var asset = make(MusicObj)
+proc load*(api: AssetAPI, path: string, typeof: typedesc[Music]): Music =
+  var asset = make(Music)
   asset.get.data = mix.loadMUS(path)
   result = asset
 

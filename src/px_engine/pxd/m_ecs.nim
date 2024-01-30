@@ -1,5 +1,3 @@
-import px_engine/pxd/ecs/ecs_d
-export ecs_d
-
-import px_engine/pxd/ecs/ecs_main
-export ecs_main
+import ../m_pass
+pass ecs/ecs_d
+pass ecs/ecs_main

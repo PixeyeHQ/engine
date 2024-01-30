@@ -6,8 +6,8 @@ import math_d
 when defined(v32):
     type float = float32
 
-type VecAny  = Vec | Vec3 | Vec2
-type Vec4or3 = Vec | Vec3
+type VecAny*  = Vec | Vec3 | Vec2
+type Vec4or3* = Vec | Vec3
 
 proc vec*(x,y,z,w: int): Vec {.inline.} =
     return (x.float,y.float,z.float,w.float)
@@ -75,6 +75,7 @@ proc h*(this: VecAny): float = this.y
 proc u*(this: VecAny): float = this.x
 proc v*(this: VecAny): float = this.y
 
+
 proc `==`*(a,b:var Vec): bool =
     a.x == b.x and
     a.y == b.y and
@@ -84,6 +85,10 @@ proc `==`*(a,b:var Vec): bool =
 
 proc `+`*(a: Vec, b: Vec): Vec {.inline.} =
     (a.x+b.x, a.y+b.y, a.z+b.z, a.w+b.w)
+
+
+proc `+`*(a: Vec3, b: Vec3): Vec3 {.inline.} =
+    (a.x+b.x, a.y+b.y, a.z+b.z)
 
 
 proc `+`*(a: Vec2, b: Vec2): Vec2 {.inline.} =

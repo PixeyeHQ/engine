@@ -1,70 +1,147 @@
-import std/hashes
+import std/[hashes,macros,macrocache,tables,strutils]
+import m_debug
+import api
 
 
-type KeyIdKind = enum
-  KTag,
-  KId
+const mcIndexMap = CacheTable"indexKeys"
 
 
-type KeyId* = object
-  case kind: KeyIdKind
-    of KTag:
-      tag*: string
-    of KId:
-      id*:  int
+type IndexKey* = object
+  value*: int
 
 
-type AnyKeyId* = string | int | enum
+proc hash*(key: IndexKey): Hash {.inline.} =
+  result = hash(key.value)
 
 
-proc hash*(key: KeyId): Hash {.inline.} =
-  case key.kind:
-  of KTag:
-    result = hash(key.tag)
-  of KId:
-    result = hash(key.id)
+proc `==`*(a: IndexKey, b: IndexKey): bool {.inline.} =
+  return a.value == b.value
 
 
-proc `==`*(a: KeyId, b: KeyId): bool {.inline.} =
-  if a.kind != b.kind:
-    return false
-  case a.kind:
-  of KTag:
-    return a.tag == b.tag
-  of KId:
-    return a.id == b.id
+converter toOrd*(t: IndexKey): int =
+  t.value
 
 
-proc toKeyId*(tag: string): KeyId =
-  KeyId(kind: KTag, tag: tag)
+var keyIndex : int
+var keyIndexMap = initTable[string,IndexKey]()
+
+ 
+proc Next*(): IndexKey  =
+  result = IndexKey(value: keyIndex)
+  inc keyIndex
 
 
-proc toKeyId*(id: int): KeyId = 
-  KeyId(kind: KId, id: id)
+proc Next*(value: int): IndexKey =
+  keyIndex = value
+  result = IndexKey(value: keyIndex)
+  inc keyIndex
 
 
-proc toKeyId*(id: enum): KeyId = 
-  KeyId(kind: KId, id: id.int)
+proc Next*(name: string): IndexKey =
+  if keyIndexMap.contains(name):
+    return  keyIndexMap[name]
+  result = IndexKey(value: keyIndex)
+  keyIndexMap[name] = result
+  inc keyIndex
 
 
-proc toString*(key: KeyId): string =
-  key.tag
+proc Next*(name: string, value: int) =
+  keyIndexMap[name] = IndexKey(value: value)
 
 
-converter toOrdinal*(t: KeyId): int =
-  t.id
+proc GetKey*(name: string): IndexKey =
+  if keyIndexMap.contains(name):
+    return  keyIndexMap[name]
+  else:
+    pxd.debug.warn &"INDEX KEY: Key not found: {name}"
 
 
-import std/macrocache
-const nextKeyID* = CacheCounter"Pxd.KeyId"
+proc CheckKey*(name: string): bool =
+  return keyIndexMap.contains(name)
 
 
-proc Next*(api: typedesc[KeyId]): KeyId {.compileTime.} =
-  result = KeyId(kind: KId, id: nextKeyId.value)
-  inc nextKeyID
+converter toKey*(name: string): IndexKey =
+  GetKey(name)
 
 
-proc Next*(api: typedesc[KeyId], value: int): KeyId {.compileTime.} =
-  inc nextKeyId, value - nextKeyId.value
-  result = KeyId(kind: KId, id: nextKeyId.value)
-  inc nextKeyID
+converter toKey*(id: int): IndexKey =
+  IndexKey(value: id)
+
+
+macro genIndexKeys*(api: PxdAPI, args: varargs[untyped]): untyped =
+  var apiName  = $args[0]
+  var typeName = apiName & "IndexKeys"
+  var indices  = newSeq[string]()
+  for index in 1..<args.len:
+    indices.add($args[index])
+  proc genTypeSection(): NimNode =
+    let recList = nnkRecList.newTree()
+    var i    = 0
+    var step = 0
+    for index in indices.items:
+      let keyName = toLowerAscii(index)
+      if mcIndexMap.hasKey(keyName):
+        i = mcIndexMap[keyName].intVal
+      else:
+        mcIndexMap[keyName] = newLit(i)
+      recList.add(nnkIdentDefs.newTree(
+         nnkPostfix.newTree(
+           newIdentNode("*"),
+           newIdentNode(indices[step])
+         ),
+         newIdentNode("IndexKey"),
+         nnkObjConstr.newTree(
+           newIdentNode("IndexKey"),
+           nnkExprColonExpr.newTree(
+             newIdentNode("value"),
+             newIntLitNode(i)
+           )
+         )
+       )
+      )
+      inc i
+      inc step
+    result = nnkTypeSection.newTree(
+      nnkTypeDef.newTree(
+      nnkPostfix.newTree(
+              newIdentNode("*"),
+              newIdentNode(typeName)
+            ),
+        newEmptyNode(),
+        nnkObjectTy.newTree(
+          newEmptyNode(),
+          newEmptyNode(),
+          recList
+        )
+      )
+    )
+  proc genConstSection(): NimNode =
+    result = nnkConstSection.newTree(
+      nnkConstDef.newTree(
+        nnkPostfix.newTree(
+          newIdentNode("*"),
+          newIdentNode(apiName)
+        ),
+        newEmptyNode(),
+        nnkCall.newTree(
+          newIdentNode(typeName)
+        )
+      )
+    )
+  proc genCalls(stm: NimNode) =
+    for index in indices.items:
+      # all string keys must begin with a small letter.
+      let keyName = toLowerAscii(index)
+      stm.add(
+        nnkCall.newTree(
+          newIdentNode("Next"),
+          newStrLitNode(keyName),
+          newIntLitNode(mcIndexMap[keyName].intVal)
+        )
+      )
+  
+  var statement = nnkStmtList.newTree()
+  statement.add(genTypeSection())
+  statement.add(genConstSection())
+  genCalls(statement)
+  statement

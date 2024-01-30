@@ -1,22 +1,9 @@
-import std/math as std_math
-import math/[
-  math_d,
-  math_extensions,
-  math_matrix,
-  math_quaternion,
-  math_rotor,
-  math_vector
-]
-
-export
-  math_d,
-  math_extensions,
-  math_matrix,
-  math_quaternion,
-  math_rotor,
-  math_vector
-
-export std_math except
-    clamp,
-    gcd,
-    lcm
+import ../m_pass
+pass math/math_d
+pass math/math_extensions
+pass math/math_matrix
+pass math/math_quaternion
+pass math/math_rotor
+pass math/math_vector
+pass_except std/math, std_math, 
+  clamp, gcd, lcm

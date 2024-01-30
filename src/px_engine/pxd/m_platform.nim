@@ -1,5 +1,4 @@
-when defined sdl:
-  import platform/platform_sdl
-  export platform_sdl
-  import platform/platform_sdl_audio
-  export platform_sdl_audio
+import ../m_pass
+when defined(sdl): 
+  pass platform/platform_sdl
+pass platform/platform_d

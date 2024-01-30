@@ -2,13 +2,10 @@ import std/hashes
 import std/macros
 import std/strutils
 import std/tables
-import px_engine/tools/m_utils_collections
-import px_engine/tools/m_utils_sorting
-import px_engine/pxd/definition/api as pxd_api except ents
-import px_engine/pxd/data/data_mem_pool
-import px_engine/pxd/data/data_object_context
-import px_engine/pxd/m_key
-import px_engine/pxd/m_debug
+import ../api
+import ../m_memory
+import ../m_debug
+import ../../px_engine_toolbox
 import ecs_d
 
 
@@ -18,7 +15,6 @@ type EcsIO = object
   entityInfo*:       SOA_EntityInfo
   nextComponentId*:  int
   regs:              MemTable[RegistryObj,Registry]
-  sys:               MemTable[SystemObj,System]
   pushedRegs:        seq[Registry]
   componentEnts:     seq[ptr EntsPack]
   cbRegistryAdded:   seq[proc(reg: Registry)]
@@ -32,13 +28,13 @@ using private: typedesc[PrivateAPI]
 
 
 proc initEnts(): EntsPack
-proc add*(self: var EntsPack, eid: EcsInt) {.inline.}
+proc add*(self: var EntsPack, eid: EcsInt)    {.inline.}
 proc delete*(self: var EntsPack, eid: EcsInt) {.inline.}
-proc delete(group: EntityGroup, eid: EcsInt) {.inline.}
+proc delete(group: EntityGroup, eid: EcsInt)  {.inline.}
 proc partof*(eid: EcsInt, group: EntityGroup): bool
 proc pushRegistry*(api; reg: Registry)
 proc reset*(self: var EntsPack)
-
+proc updateGroups*(eid: EcsInt)
 
 template `[]`(self: var EcsIO, idx: SomeInteger, t: typedesc[Entity]): var Entity =
   self.entityInfo.entity[idx]
@@ -53,10 +49,8 @@ template `[]=`(self: var EcsIO, idx: SomeInteger, t: typedesc[EntityRegistry], v
   self.entityInfo.entityReg[idx] = val
 
 
-
-GEN_MEM_POOL(RegistryObj,    Registry)
-GEN_MEM_POOL(EntityGroupObj, EntityGroup)
-GEN_MEM_POOL(SystemObj,      System)
+pxd.memory.genPoolTyped(Registry, RegistryObj)
+pxd.memory.genPoolTyped(EntityGroup, EntityGroupObj)
 
 
 proc init(io: var EcsIO) =
@@ -68,7 +62,7 @@ proc init(io: var EcsIO) =
     # handle
     let entity     = io[index, Entity].addr
     entity.id      = u32(index) + 1
-    entity.version = u32(0)
+    entity.version = u32(1)
     # comps
     let entityComps = io[index, EntityComps].addr
     entityComps[] = newSeqOfCap[CId](4)
@@ -81,9 +75,6 @@ let debug = pxd.debug
 #------------------------------------------------------------------------------------------
 proc builder*(api): EcsBuilder =
   result
-
-# proc `@:`*(self: Registry):  RegistryBuilder =
-#   result = self.RegistryBuilder
 
 
 #-----------------------------------------------------------------------------------------
@@ -112,7 +103,7 @@ proc getRegistry*(api;): Registry =
   var exist = io.regs.has("default")
   result = api.getRegistry("default")
   if not exist:
-    pxd.debug.warn("[ECS] Lazy registry initialization, all entities belong to default registry.")
+   # pxd.debug.warn("[ECS] Lazy registry initialization, all entities belong to default registry.")
     result.setEntityRange(0, ECS_ENTITY_MAX)
     pxd.ecs.pushRegistry(result)
 
@@ -131,6 +122,8 @@ proc addRegistry*(api; minEntity, maxEntity: int): Registry {.discardable.} =
 
 
 
+
+
 #------------------------------------------------------------------------------------------
 # @api ecs entity
 #------------------------------------------------------------------------------------------
@@ -139,7 +132,7 @@ proc id*(self: Ent): u32 {.inline.} = # lo
 
 
 proc version*(self: Ent): u32 {.inline.} = # hi
-  u32(int(EntSizeT(self)-(EntSizeT(self) and EntLo)) / int(EntHi))
+  u32(u64(EntSizeT(self)-(EntSizeT(self) and EntLo)) div u64(EntHi))
 
 
 proc registry*(self: Ent|EId): Registry {.inline.} =
@@ -197,7 +190,7 @@ proc recycle(private; eid: EcsInt) {.inline.} =
   inc reg.entityRange.free
   inc version
   if version == ECS_ENTITY_VERSION_MAX:
-    version = 0
+    version = 1
   einfo.version = version
 
 
@@ -214,6 +207,7 @@ proc drop*(api; self: Ent|EId) =
   pxd.debug.assert:(self.alive, "ECS", "Entity is already destroyed.")
   private.dropGroups(self.id)
   private.recycle(self.id)
+  io[self.id, EntityComps].setLen(0)
 
 
 template check(entity: Ent, ctype: typedesc): bool =
@@ -241,10 +235,6 @@ proc reset*(api; reg: Registry) =
   for cb in io.cbRegistryReset.mitems:
     cb(reg)
   reg.entityTagged.clear()
-
-
-proc getSystem*(api; reg: Registry, tag: string): System =
-  io.sys.get(tag & $reg.id)
 
 
 proc pushRegistry*(api; reg: Registry) =
@@ -404,24 +394,23 @@ proc findGroup(reg: Registry, cmask: ComponentMask): EntityGroup =
 
 proc getGroup(reg: Registry, cmask: ComponentMask): EntityGroup =
   let mreg = reg.get.addr
-  var nextGroup = findGroup(reg, cmask)
-  if nextGroup == EntityGroup.Nil:
-    nextGroup  = mreg.entityGroups.append(make(EntityGroupObj))
-    nextGroup.get.cmask = cmask
-    nextGroup.get.ents  = initEnts()
+  result = findGroup(reg, cmask)
+  if result == EntityGroup.Nil:
+    result  = mreg.entityGroups.append(make(EntityGroup))
+    result.get.cmask = cmask
+    result.get.ents  = initEnts()
     for cid in cmask.maskAll.incl:
       reg.cgroups.grow(cid.int):
-        reg.cgroups[cid].add(nextGroup)
+        reg.cgroups[cid].add(result)
     for cid in cmask.maskAll.excl:
        reg.cgroups.grow(cid.int):
-        reg.cgroups[cid].add(nextGroup)
+        reg.cgroups[cid].add(result)
     for cid in cmask.maskAny.incl:
      reg.cgroups.grow(cid.int):
-        reg.cgroups[cid].add(nextGroup)
+        reg.cgroups[cid].add(result)
     for cid in cmask.maskAny.excl:
       reg.cgroups.grow(cid.int):
-        reg.cgroups[cid].add(nextGroup)
-  result = nextGroup
+        reg.cgroups[cid].add(result)
 
 
 proc add(group: EntityGroup, eid: EcsInt) {.inline.} =
@@ -628,6 +617,7 @@ proc format_component_alias(s: string): string {.used.} =
     ## Makes distinct shortcut type alias for component types.
     ## Example: ComponentCamera -> CCamera
     result = s
+    if not result.contains("Component") and not result.contains("Tag"): return result
     var letters: array[8, int]
     var index = 0
     var nletter = 0
@@ -663,13 +653,23 @@ macro gen_api_component(ctype: typedesc, cmode: static int) {.used.} =
   if cmode == AS_COMPONENT:
     source = &("""
 let {pname}_id* = int {tname}.Id
-proc {pname}*(entity: Ent|EId): ptr {tname} {{.inline.}} =
-  result = component(entity, {tname})""")
+when {tname} is ref:
+  proc {pname}*(entity: Ent|EId): {tname} {{.inline.}} =
+    result = component(entity, {tname})
+  proc {pname}*(node: EntityObj): {tname} {{.inline.}} =
+    result = component(node.entity, {tname})
+else:
+  proc {pname}*(entity: Ent|EId): ptr {tname} {{.inline.}} =
+    result = component(entity, {tname})
+  proc {pname}*(node: EntityObj): ptr {tname} {{.inline.}} =
+    result = component(node.entity, {tname})""")
   else:
     source = &("""
 let {pname}_id* = int {tname}.Id
 proc {pname}*(entity: Ent|EId): var int {{.inline.}} =
-  component(entity, {tname})[].int""")
+  component(entity, {tname})[].int
+proc {pname}*(node: EntityObj): var int {{.inline.}} =
+  component(node.entity, {tname})[].int""")
   result = parsestmt(source)
 
 
@@ -677,9 +677,9 @@ template GEN_ECS_COMPONENT_API(T: typedesc, cmode: int, initSize: int) =
   #------------------------------------------------------------------------------------------
   # @api component define
   #------------------------------------------------------------------------------------------
-  type ctype    = typedesc[T]
-  type CPtr     = ptr T
-  type CStorage = object
+  type ctype          = typedesc[T]
+  type CPtr  {.used.} = ptr T
+  type CStorage       = object
     comps*: seq[T]
     ents*:  EntsPack
     active: bool
@@ -689,7 +689,7 @@ template GEN_ECS_COMPONENT_API(T: typedesc, cmode: int, initSize: int) =
   proc deleteComponentEnd*(eid: EcsInt, _: ctype) {.inline.}
 
   let ctypeId: int = io.nextComponentId; inc io.nextComponentId
-  var storages = initObjectContext(CStorage,0)
+  var storages = newSeq[CStorage]()#initObjectContext(CStorage,0)
   var storage: ptr CStorage
 
   
@@ -717,17 +717,29 @@ template GEN_ECS_COMPONENT_API(T: typedesc, cmode: int, initSize: int) =
   proc Storage*(_: ctype): ptr CStorage =
     storage
 
-
-  template Component*(_: ctype, entity: Ent|EId): CPtr =
-     storage.comps[storage.ents.sparse[entity.id]].addr
-
-
-  template component(eid: EcsInt, _: ctype): CPtr =
-     storage.comps[storage.ents.sparse[eid]].addr
+  when T is ref:
+    template Component*(_: ctype, entity: Ent|EId): T =
+      storage.comps[storage.ents.sparse[entity.id]]
 
 
-  template component(entity: Ent|EId, _: ctype): CPtr =
-     storage.comps[storage.ents.sparse[entity.id]].addr
+    template component(eid: EcsInt, _: ctype): T =
+      storage.comps[storage.ents.sparse[eid]]
+
+
+    template component(entity: Ent|EId, _: ctype): T =
+      storage.comps[storage.ents.sparse[entity.id]]
+
+  else:
+    template Component*(_: ctype, entity: Ent|EId): CPtr =
+      storage.comps[storage.ents.sparse[entity.id]].addr
+
+
+    template component(eid: EcsInt, _: ctype): CPtr =
+      storage.comps[storage.ents.sparse[eid]].addr
+
+
+    template component(entity: Ent|EId, _: ctype): CPtr =
+      storage.comps[storage.ents.sparse[entity.id]].addr
 
 
   proc hasComponent*(eid: EcsInt, _: ctype): bool {.inline, discardable.} =
@@ -735,7 +747,8 @@ template GEN_ECS_COMPONENT_API(T: typedesc, cmode: int, initSize: int) =
 
 
   proc growStorage(reg: Registry, _: ctype) =
-    var storage = storages.grow(reg.id.int)
+    storages.grow(reg.id.int)
+    var storage = storages[reg.id.int].addr
     if storage.active:
       return
     storage.ents = initEnts()
@@ -746,8 +759,7 @@ template GEN_ECS_COMPONENT_API(T: typedesc, cmode: int, initSize: int) =
 
 
   proc setStorage(reg: Registry, _: ctype) =
-    storages.setCurrent(reg.id.int)
-    storage = storages.current.addr
+    storage = storages[reg.id.int].addr
     io.componentEnts[ctypeId] = storage.ents.addr
 
   
@@ -757,6 +769,14 @@ template GEN_ECS_COMPONENT_API(T: typedesc, cmode: int, initSize: int) =
   #------------------------------------------------------------------------------------------
   # @api component
   #------------------------------------------------------------------------------------------
+  when T is ref:
+    proc addComponent(eid: EcsInt, _: ctype, item: T): int {.inline.} =
+      let cid = storage.ents.getAdd(eid)
+      io[eid, EntityComps].add(T.Id)
+      storage.comps.grow(cid)
+      storage.comps[cid] = item
+      cid
+  #else:
   proc addComponent(eid: EcsInt, _: ctype): int {.inline.} =
     let cid = storage.ents.getAdd(eid)
     io[eid, EntityComps].add(T.Id)
@@ -774,7 +794,9 @@ template GEN_ECS_COMPONENT_API(T: typedesc, cmode: int, initSize: int) =
 
 
   proc deleteComponentBegin*(eid: EcsInt, _: ctype) {.inline.} =
-    io[eid, EntityComps].del(T.Id)
+    # [?] Faster alternative: resize entitycomps to biggest ComponentId to delet
+    let indexToRemove = io[eid, EntityComps].find(T.Id) 
+    io[eid, EntityComps].del(indexToRemove)
     deleteComponentEnd(eid, ctype)
     updateGroups(eid, ctypeId)
 
@@ -783,18 +805,55 @@ template GEN_ECS_COMPONENT_API(T: typedesc, cmode: int, initSize: int) =
   # @api component & segment public
   #------------------------------------------------------------------------------------------
   when cmode == AS_COMPONENT:
-    proc get*(self: Ent|EId, _: ctype): CPtr {.discardable, inline.} =
-      if hasComponent(self.id, ctype): return component(self.id, ctype)
-      result = storage.comps[addComponent(self.id, ctype)].addr
-      updateGroups(self.id, ctypeId)
+    when T is ref:
+      proc get*(self: Ent|EId, _: ctype): T {.discardable, inline.} =
+        if hasComponent(self.id, ctype): 
+          return component(self.id, ctype)
+        result = storage.comps[addComponent(self.id, ctype)]
+        updateGroups(self.id, ctypeId)
 
 
-    proc add*(builder: var EntityBuilder, _: ctype): CPtr {.discardable,inline.} =
-      result = storage.comps[addComponent(builder.ent.id, ctype)].addr
+      proc get*(self: EntityObj, ctypeof: ctype): T {.discardable, inline.} =
+        self.entity.get(ctypeof)
+
+
+      proc add*(builder: var EntityBuilder, _: ctype): T {.discardable,inline.} =
+        result = storage.comps[addComponent(builder.ent.id, ctype)]
+
+      # [?] Might be not good idea to use 'put' name since it's used for tags already.
+      proc put*(self: Ent|EId, _: ctype, item: T) =
+        if hasComponent(self.id, ctype): 
+          var comp = component(self.id, ctype)
+          comp = item
+        else:
+          discard addComponent(self.id, ctype, item)
+          updateGroups(self.id, ctypeId)
+
+
+      proc put*(self: EntityObj, ctypeof: ctype, item: T) =
+        self.entity.put(ctypeof, item)
+    else:
+      proc get*(self: Ent|EId, _: ctype): CPtr {.discardable, inline.} =
+        if hasComponent(self.id, ctype): 
+          return component(self.id, ctype)
+        result = storage.comps[addComponent(self.id, ctype)].addr
+        updateGroups(self.id, ctypeId)
+      
+
+      proc get*(self: EntityObj, ctypeof: ctype): CPtr {.discardable, inline.} =
+        self.entity.get(ctypeof)
+
+
+      proc add*(builder: var EntityBuilder, _: ctype): CPtr {.discardable,inline.} =
+        result = storage.comps[addComponent(builder.ent.id, ctype)].addr
 
 
     proc remove*(self: Ent|EId, _: ctype) {.inline.} =
       deleteComponentBegin(self.id, ctype)
+    
+
+    proc remove*(self: EntityObj, ctypeof: ctype) {.inline.} =
+      self.entity.remove(ctypeof)
 
 
   when cmode == AS_TAG:
@@ -810,6 +869,10 @@ template GEN_ECS_COMPONENT_API(T: typedesc, cmode: int, initSize: int) =
       updateGroups(self.id, ctypeId)
 
 
+    proc put*(self: EntityObj, ctypeof: ctype, amount: int = 1) {.inline.} =
+      self.entity.put(ctype,amount)
+
+
     proc add*(builder: var EntityBuilder, _: ctype, amount: int) =
       builder.ent.put(ctype,amount)
 
@@ -822,6 +885,10 @@ template GEN_ECS_COMPONENT_API(T: typedesc, cmode: int, initSize: int) =
       updateGroups(self.id, ctypeId)
 
 
+    proc inc*(self: EntityObj, ctypeof: ctype){.inline.} =
+      self.entity.inc(ctypeof)
+
+
     proc inc*(self: Ent|EId, _: ctype, amount: int) =
       # todo: assert, amount can't be smaller than 1
       if not hasComponent(self.id, ctype):
@@ -830,9 +897,17 @@ template GEN_ECS_COMPONENT_API(T: typedesc, cmode: int, initSize: int) =
       slot[].int += amount
       updateGroups(self.id, ctypeId)
 
+
+    proc inc*(self: EntityObj, ctypeof: ctype, amount: int){.inline.} =
+      self.entity.inc(ctypeof, amount)
+
    
     proc remove*(self: Ent|EId, _: ctype) {.inline.} =
       deleteComponentBegin(self.id, ctype)
+
+
+    proc remove*(self: EntityObj, ctypeof: ctype){.inline.} =
+      self.entity.remove(ctypeof)
 
 
     proc dec*(self: Ent|EId, _: ctype){.inline.} =
@@ -849,6 +924,14 @@ template GEN_ECS_COMPONENT_API(T: typedesc, cmode: int, initSize: int) =
       if slot[].int <= 0:
         remove(self, ctype)
       updateGroups(self.id, ctypeId)
+
+
+    proc dec*(self: EntityObj, ctypeof: ctype, amount: int){.inline.} =
+      self.entity.dec(ctypeof, amount)
+
+
+    proc dec*(self: EntityObj, ctypeof: ctype){.inline.} =
+      self.entity.dec(ctypeof)
 
 
 macro gen_component_macro(ctype: typed, initSize: static int = 0): untyped =
@@ -887,7 +970,7 @@ macro gen_component_macro(ctype: typed, initSize: static int = 0): untyped =
   return statements
 
 
-template genComponent*(api: EcsAPI; ctype: typed, initSize: static int = 0): untyped =
+template genComponent*(api: EcsAPI; ctype: typed, initSize: static int = 1): untyped =
   gen_component_macro(ctype, initSize)
 
 
@@ -924,18 +1007,22 @@ macro gen_system_component_mask(vname: untyped, ctypes: varargs[untyped]): untyp
   result = kernel
 
 
-proc count*(system: System): int =
-    system.get.group.get.ents.count.int
+proc count*(system: var EntityQuery): int =
+    system.group.get.ents.count.int
 
 
-proc sort*(system: System, cmp: EntityComparer) {.inline.} =
-  let ents = system.group.ents.addr
-  let p = ents.packed.addr
-  mergeSort(ents.packed, ents.count, cmp)
+iterator sorted*(system: var EntityQuery, cmp: EntityComparer): EId {.inline.} =
+  var pack {.global.}: seq[EId]
+  let group = system.group.get.addr
+  var index = group.ents.count
+  pack = group.ents.packed
+  mergeSort(pack, index, cmp)
+  while 0 < index:
+    dec index
+    yield pack[index]
 
 
-iterator entities*(system: System): EId {.inline.} =
-  let system = system.get.addr
+iterator entities*(system: var EntityQuery): EId {.inline.} =
   let group = system.group.get.addr
   var index = group.ents.count
   while 0 < index:
@@ -943,13 +1030,7 @@ iterator entities*(system: System): EId {.inline.} =
     yield group.ents.packed[index]
 
 
-template onChanged*(system: System, code: untyped): untyped =
-  if system.group.changed:
-    code
-
-
-iterator entitiesInversed*(system: System): EId {.inline.} =
-  let system = system.get.addr
+iterator entitiesInversed*(system: var EntityQuery): EId {.inline.} =
   let group = system.group.get.addr
   var index = 0
   while index < group.ents.count:
@@ -957,55 +1038,59 @@ iterator entitiesInversed*(system: System): EId {.inline.} =
     inc index
 
 
+template onChanged*(system: var EntityQuery, code: untyped): untyped =
+  if system.group.changed:
+    code
+
 #------------------------------------------------------------------------------------------
 # @api ecs system builder
 #------------------------------------------------------------------------------------------
-proc system*(api: EcsBuilder, reg: Registry): var SystemBuilder =
-  var builder {.global.}: SystemBuilder = SystemBuilder()
-  builder.system = make(SystemObj)
-  let msystem = builder.system.get.addr
-  msystem.reg = reg
-  builder
-
-
-proc system*(api: EcsBuilder, reg: Registry, tag: string): var SystemBuilder =
-  var builder {.global.}: SystemBuilder = SystemBuilder()
-  builder.system = io.sys.get(tag & $reg.id)
-  let msystem = builder.system.get.addr
-  msystem.reg = reg
-  builder
-
-
-proc withAll(builder: var SystemBuilder, mask: ComponentMaskPart): var SystemBuilder =
-  builder.system.get.mask.maskAll = mask
-  builder
-
-
-proc withAny(builder: var SystemBuilder, mask: ComponentMaskPart): var SystemBuilder =
-  builder.system.get.mask.maskAny = mask
-  builder
-
-
-template with*(builder: var SystemBuilder, ctypes: varargs[untyped]): var SystemBuilder =
-  withAll(builder, gen_system_component_mask(maskAll, ctypes))
-
-
-template withAny*(builder: var SystemBuilder, ctypes: varargs[untyped]): var SystemBuilder =
-  withAny(builder, gen_system_component_mask(maskAny, ctypes))
-
-
-# proc rule*(builder: var SystemBuilder, pred: proc(e: EId): bool {.closure.}): var SystemBuilder =
-#   builder.system.get.rules.add(pred)
-#   builder
-
-
-proc build*(builder: var SystemBuilder): System =
-  let reg = builder.system.get.reg
-  builder.system.get.group = getGroup(builder.system.get.reg, builder.system.get.mask)
-  builder.system
+proc updateEntities(api;) =
+  var flag {.global.} : bool = false
+  if flag: return else: flag = true
+  for reg in io.regs.table.values:
+    let min = reg.entityRange.min
+    let max = reg.entityRange.max
+    for index in min..max:
+      updateGroups(index)
 
 
 proc update*(api;) =
+  api.updateEntities()
   for reg in io.regs.table.values:
     for group in reg.entityGroups.items:
       group.changed = false
+
+
+#------------------------------------------------------------------------------------------
+# @api entity query
+#------------------------------------------------------------------------------------------
+template setGroup*(self: var EntityQuery, code: untyped) =
+  block:
+    template with(ctypes: varargs[untyped]) {.used.} =
+      self.mask.maskAll = gen_system_component_mask(maskAll, ctypes)
+    template withAny(ctypes: varargs[untyped]) {.used.} =
+      self.mask.maskAny = gen_system_component_mask(maskAny, ctypes)
+    code
+    self.group = getGroup(self.reg, self.mask)
+
+
+template query*(api: EcsAPI, registry: Registry, code: untyped): EntityQuery =
+  var self = EntityQuery(reg: registry)
+  block:
+    template with(ctypes: varargs[untyped]) {.used.} =
+      self.mask.maskAll = gen_system_component_mask(maskAll, ctypes)
+    template withAny(ctypes: varargs[untyped]) {.used.} =
+      self.mask.maskAny = gen_system_component_mask(maskAny, ctypes)
+    code
+    self.group = getGroup(self.reg, self.mask)
+  self
+
+
+#------------------------------------------------------------------------------------------
+# @api methods
+#------------------------------------------------------------------------------------------
+method drop*(self: EntityObj) = pxd.ecs.drop(self.entity)
+method init*(self: EntityObj) {.base.} = discard
+method init*(self: EntityObj, params: RootObj) {.base.} = discard
+proc init*(self: EntityObj, reg: Registry) = self.entity = pxd.ecs.entity(reg)

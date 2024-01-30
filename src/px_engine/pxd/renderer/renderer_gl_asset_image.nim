@@ -1,61 +1,81 @@
-import px_engine/vendor/stb_image
-import px_engine/pxd/definition/api
-import px_engine/pxd/data/data_mem_pool
-import px_engine/pxd/data/data_mem
-import px_engine/pxd/m_debug
-import renderer_gl_asset_image_d
-export renderer_gl_asset_image_d
+import std/[strutils, strformat]
+import ../[api, m_memory, m_debug, m_filesystem]
+import ../../vendors/[stb_image]
+import ../../assets/[asset_pack]
+
+type
+  ImageObj* = object
+    width*: int
+    height*: int
+    components*: int
+    memory*: Mem
+  ImageDef* = ref object of RootObj
+    flip_vertically*: bool = true
 
 
-GEN_MEM_POOL(Image_Object, Image)
+pxd.memory.genPool(Image, ImageObj, 10)
 
 
-let debug  = pxd.debug
-let engine = pxd.engine
 #------------------------------------------------------------------------------------------
 # @api image loader
 #------------------------------------------------------------------------------------------
-proc load*(api: EngineAPI, path: string, typeof: typedesc[Image]): Image =
-  var w,h,bits: cint
-  stbi_set_flip_vertically_on_load(ord true)
-  var data = stbi_load(path, w, h, bits, STB_IMAGE_DEFAULT)
+proc load*(api: AssetAPI, relativePath: string, _: typedesc[Image], def: ImageDef): Image =
+  var w, h, bits: cint
+  let path = pxd.filesystem.path(relativePath)
+  stbi_set_flip_vertically_on_load((cint(ord def.flip_vertically)))
+  var data = stbi_load(cstring(path), w, h, bits, STB_IMAGE_DEFAULT)
   var reason = $stbi_failure_reason()
   if reason != "no SOI" and reason != default(string):
-    #png file always gives this error. It's ok.
-    pxd.debug.warn(stbi_failure_reason())
-  
-  var image_asset = make(Image_Object)
-  image_asset.get.width      = w
-  image_asset.get.height     = h
-  image_asset.get.components = bits
-  image_asset.get.mem        = engine.initMem(w * h * bits)
-  copyMem(image_asset.get.mem.data, data, w * h * bits)
+    #png file always gives this error. It's ok
+    pxd.debug.warn("ASSETS: " & stbi_failure_reason())
+  var image_asset = make(Image)
+  image_asset.width = w
+  image_asset.height = h
+  image_asset.components = bits
+  image_asset.memory = pxd.memory.initMem(w * h * bits)
+  copyMem(image_asset.get.memory.data, data, w * h * bits)
   stbi_image_free(data)
   result = image_asset
 
 
-proc unload*(api: EngineAPI, image: Image) =
-  image.width      = 0
-  image.height     = 0
+proc load*(api: AssetAPI, relativePath: string, typeof: typedesc[Image]): Image =
+  api.load(relativePath, typeof, ImageDef())
+
+
+proc load*(pack: AssetPack, relativePath: string, typeof: typedesc[Image], def: ImageDef): Image {.discardable.} =
+  var tag = relativePath & $typeof
+  result = pxd.asset.load(relativePath, typeof, def)
+  pack.items[tag] = (Handle)result
+
+
+proc load*(pack: AssetPack, relativePath: string, typeof: typedesc[Image]): Image {.discardable.} =
+  pack.load(relativePath, typeof, ImageDef())
+
+
+proc unload*(api: AssetAPI, image: Image) =
+  image.width = 0
+  image.height = 0
   image.components = 0
-  pxd.engine.freeMem(image.mem)
+  pxd.memory.freeMem(image.memory)
   image.drop()
 
 
-# proc freeObj*(self: var ImageObj) =
-#   self.data.setLen(0)
-#   self.width      = 0
-#   self.height     = 0
-#   self.components = 0
+# proc handle*(api: AssetAPI, relativePath: string, typeof: typedesc[Image]): Asset[Image] =
+#   result.path = relativePath
+# # proc freeObj*(self: var ImageObj) =
+# #   self.data.setLen(0)
+# #   self.width      = 0
+# #   self.height     = 0
+# #   self.components = 0
 
 
-# proc onDrop(handle: Image) =
-#   freeObj(handle.get)
+# # proc onDrop(handle: Image) =
+#  #   freeObj(handle.get)
 
 
-# proc image*(api: var Assets, assetName: string): Image {.discardable, inline.} =
-#   result = imageStore.get(assetName, proc(): ImageObj = loadImage(assetName))
+# # proc image*(api: var Assets, assetName: string): Image {.discardable, inline.} =
+# #   result = imageStore.get(assetName, proc(): ImageObj = loadImage(assetName))
 
 
-# proc images*(api: var Assets): var ObjPool[ImageObj, Image] {.inline.} =
-#   imageStore
+# # proc images*(api: var Assets): var ObjPool[ImageObj, Image] {.inline.} =
+# #   imageStore

@@ -1,9 +1,9 @@
 (
   app.developer = 'Unknown';
-  app.title     = 'New Game';
+  app.title     = 'EPIC GAME';
   app.window.w  = 1280;;
   app.window.h  = 720;;
-  app.fps       = 60;
+  app.fps       = -1;
   app.ups       = 60;
-  app.vsync     = false;
+  app.vsync     = true;
 )

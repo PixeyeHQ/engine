@@ -1,5 +1,5 @@
 # Package
-version       = "2023.7.4"
+version       = "2024.0.0"
 author        = "Dmitry Igorevich Mitrofanov (@pixeye)"
 description   = "2d/3d Game engine"
 license       = "Zlib"
@@ -9,6 +9,7 @@ srcDir        = "src"
 # Dependencies
 requires "nim      >= 1.0"
 requires "sdl2_nim >= 2.0.14.3"
+requires "https://github.com/PixeyeHQ/px.nim.pods >= 2023.12.1"
 
 
 var ex = "ex"

@@ -1,0 +1,9 @@
+import m_pass
+pass assets/asset_image
+pass assets/asset_texture
+pass assets/asset_shader
+pass assets/asset_pack
+pass assets/asset_sprite
+pass assets/asset_font
+pass assets/asset_aseprite
+pass assets/asset_audio

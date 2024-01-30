@@ -50,20 +50,19 @@ proc with*(builder: var EntityBuilder, ctype: tdamaged_t, amount: int): var Enti
 
 
 let reg  = pxd.ecs.getRegistry()
-let sys = pxd.ecs.builder.system(reg)
-                     .with(CTransform,CObject)
-                     .build()
-
 
 benchmark ECS_ENTITY_MAX, 1:
   profile "create":
     let e = pxd.ecs.entity(reg)
-    e.get ctransform_t
-    e.get cobject_t
+    e.get(CTransform)
+    e.get(CObject)
+
+pxd.ecs.update()
 
 benchmark 1, 1:
+  var q = pxd.ecs.query(reg): with(CTransform, CObject)
   profile "update system":
-    for e in sys.entities():
+    for e in q.entities:
       e.get ctransform_t
       e.get cobject_t
 
