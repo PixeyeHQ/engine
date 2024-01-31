@@ -114,23 +114,26 @@ proc closeApp*(api: PxdAPI) =
   api.vars.app_wantsQuit = true
 
 
-# template draw*(renderTexture: RenderTexture, code: untyped) =
-#   bindFramebuffer(renderTexture.id)
-#   code
-#   renderActiveBatch()
-
-# template draw*(code: untyped) =
-#   screen.width  = window_w[].float
-#   screen.height = window_h[].float
-#   drawBegin()
-#   code
-#   drawLate()
+proc update_system_debug_esc*() =
+  if pxd.inputs.get.down Key.Esc: pxd.closeApp()
 
 
 template run*(api: PxdAPI, code: untyped): untyped =
   #######
   let timer = pxd.timer.state.addr
   timer.delta = 1.0 / 60.0 # warmup
+  template frame_begin*(apiStage: PxdAPI, codeStage: untyped) =
+    codeStage
+  template frame_end*(apiStage: PxdAPI, codeStage: untyped) =
+    codeStage
+  template update*(apiStage: PxdAPI, codeStage: untyped) =
+    codeStage
+  template update_end*(apiStage: PxdAPI, codeStage: untyped) =
+    codeStage
+  template update_begin*(apiStage: PxdAPI, codeStage: untyped) =
+    codeStage
+  template startup*(apiStage: PxdAPI, codeStage: untyped) =
+    codeStage
   template draw*(apiDraw: PxdAPI, renderTexture: RenderTexture, codeDrawTexture: untyped) = 
     block:
       pxd.render.useFramebuffer(renderTexture.id)

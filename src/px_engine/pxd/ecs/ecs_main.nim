@@ -826,6 +826,12 @@ template GEN_ECS_COMPONENT_API(T: typedesc, cmode: int, initSize: int) =
         self.entity.get(ctypeof)
 
 
+      template get*(self: EntityObj, ctypeof: ctype, code: untyped) =
+        block:
+          var c {.inject.} = self.entity.get(ctypeof)
+          code
+
+
       proc add*(builder: var EntityBuilder, _: ctype): T {.discardable,inline.} =
         result = storage.comps[addComponent(builder.ent.id, ctype)]
 
@@ -851,6 +857,12 @@ template GEN_ECS_COMPONENT_API(T: typedesc, cmode: int, initSize: int) =
 
       proc get*(self: EntityObj, ctypeof: ctype): CPtr {.discardable, inline.} =
         self.entity.get(ctypeof)
+
+
+      template get*(self: EntityObj, ctypeof: ctype, code: untyped) =
+        block:
+          var c {.inject.} = self.entity.get(ctypeof)
+          code
 
 
       proc add*(builder: var EntityBuilder, _: ctype): CPtr {.discardable,inline.} =

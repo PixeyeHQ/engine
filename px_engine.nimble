@@ -1,5 +1,5 @@
 # Package
-version       = "2024.0.2"
+version       = "2024.0.3"
 author        = "Dmitry Igorevich Mitrofanov (@pixeye)"
 description   = "2d/3d Game engine"
 license       = "Zlib"
